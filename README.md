@@ -122,7 +122,7 @@ de notícias.
 | Camada | Tecnologia |
 |---|---|
 | Linguagem | Python **3.11+** |
-| Automação Web | Selenium 4 + webdriver-manager |
+| Automação Web | Selenium 4 + `chromedriver-autoinstaller` |
 | Padrão de design (web) | Page Object Model (POM) |
 | Validação de inputs / modelos | **Pydantic v2** |
 | IA Generativa (LLM) | _A definir_ (OpenAI / Anthropic / Gemini / Ollama) |
@@ -162,13 +162,14 @@ RPA_SMART_NEWS/
 ```text
 RPA_SMART_NEWS/
 ├── src/
-│   ├── pages/                # Page Objects (POM) por site
-│   │   ├── base_page.py
-│   │   └── ...
-│   ├── services/             # Orquestração do fluxo
-│   ├── genai/                # Prompts, clientes LLM, dedupe e clustering
-│   ├── pdf/                  # Geração do relatório final
-│   └── utils/                # Helpers (scroll humanizado, logging, etc.)
+│   ├── locators/             # Seletores (XPath/CSS) por site
+│   ├── pages/                # Page Objects (POM) — BasePage + páginas por site
+│   ├── steps/                # Fluxos de alto nível (orquestram Pages)
+│   ├── services/             # Orquestração do RPA, menu CLI
+│   ├── models/               # Modelos Pydantic v2 (UserInput, Topic, etc.)
+│   ├── utils/                # Config, logger, driver factory, helpers
+│   ├── genai/                # Cliente LLM, embeddings, prompts, dedupe
+│   └── pdf/                  # Geração do relatório final
 ├── tests/                    # Testes unitários (pytest)
 ├── output/                   # PDFs gerados (não versionado)
 └── .env.example              # Variáveis de ambiente de exemplo

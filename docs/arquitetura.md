@@ -41,7 +41,7 @@ flowchart TB
     end
 
     subgraph WEB["Automação Web (POM)"]
-        DRV["Driver Factory<br/>(Selenium + webdriver-manager)"]
+        DRV["Driver Factory<br/>(Selenium + chromedriver-autoinstaller)"]
         BP["BasePage"]
         S1["Site 1 — Page Object"]
         S2["Site 2 — Page Object"]
@@ -135,3 +135,4 @@ flowchart LR
 | 0.1 | 2026-04-30 | Leonardo Santos | Versão inicial: componentes e fluxo de dados. |
 | 0.2 | 2026-04-30 | Leonardo Santos | Substitui guardrail LLM por **menu determinístico** (10 temas + N dias) nos dois diagramas. |
 | 0.3 | 2026-04-30 | Leonardo Santos | Inclui **Pydantic v2** nos labels de validação e o limite **1–10 dias**. |
+| 0.4 | 2026-04-30 | Leonardo Santos | Troca `webdriver-manager` por **`chromedriver-autoinstaller`** no nó `Driver Factory`. |

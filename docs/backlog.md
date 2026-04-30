@@ -41,11 +41,11 @@ RFs do escopo, mas necessários para a entrega.
 
 | ID | Descrição |
 |---|---|
-| **RT01** | Estrutura modular (`src/pages`, `src/services`, `src/genai`, `src/pdf`, `src/utils`, `tests`). |
+| **RT01** | Estrutura modular dentro de `src/`: `locators/`, `pages/` (com `BasePage`), `steps/`, `services/`, `models/`, `genai/`, `pdf/`, `utils/`, mais `tests/` na raiz. Padrão **PEP8** + docstrings. |
 | **RT02** | Carregamento de configuração via `.env` (`python-dotenv`) + `.env.example`. |
 | **RT03** | Logging estruturado (níveis, timestamps, módulo de origem). |
 | **RT04** | Setup de testes com `pytest` + `pytest-cov`. |
-| **RT05** | Camada base do Selenium (driver factory, opções, `webdriver-manager`). |
+| **RT05** | Camada base do Selenium (driver factory, opções) usando **`chromedriver-autoinstaller`**. |
 | **RT06** | Cliente LLM **abstraído** por interface (permite trocar provedor). |
 | **RT07** | Cliente de embeddings abstraído (similaridade semântica). |
 | **RT08** | Integração com biblioteca de geração de PDF. |
@@ -61,44 +61,48 @@ RFs do escopo, mas necessários para a entrega.
 > e datas → RPA coleta em 3 sites → gera um PDF simples com sumarização
 > básica. Sem deduplicação semântica, sem clustering, sem polimento.
 
-- [ ] **B-001** `[RT01]` — Definir estrutura modular do projeto
-  - [ ] Pastas `src/pages`, `src/services`, `src/genai`, `src/pdf`, `src/utils`, `tests` criadas
-  - [ ] `__init__.py` em cada pacote
-  - [ ] `main.py` passa a chamar o orquestrador em `src/services`
+- [x] **B-001** `[RT01]` — Definir estrutura modular do projeto
+  - [x] Pastas em `src/`: `locators/`, `pages/`, `steps/`, `services/`, `models/`, `utils/`, `genai/`, `pdf/` criadas
+  - [x] Pasta `tests/` na raiz criada
+  - [x] `__init__.py` em cada pacote
+  - [x] Código em conformidade com **PEP8** e com **docstrings** (curtas e objetivas)
+  - [x] `main.py` passa a chamar o orquestrador em `src/services`
 
-- [ ] **B-002** `[RT02]` — Carregamento de configuração via `.env`
-  - [ ] `.env.example` versionado com chaves esperadas
-  - [ ] Módulo `src/utils/config.py` lê e valida as variáveis
-  - [ ] Falha amigável se variável obrigatória estiver ausente
+- [x] **B-002** `[RT02]` — Carregamento de configuração via `.env`
+  - [x] `.env.example` versionado com chaves esperadas
+  - [x] Módulo `src/utils/config.py` lê e valida as variáveis (Pydantic Settings v2)
+  - [x] Falha amigável se variável obrigatória estiver ausente (defaults seguros)
 
-- [ ] **B-003** `[RT03]` — Logging estruturado
-  - [ ] Logger central em `src/utils/logger.py`
-  - [ ] Níveis INFO/WARNING/ERROR habilitados
-  - [ ] Timestamps em cada linha de log
+- [x] **B-003** `[RT03]` — Logging estruturado
+  - [x] Logger central em `src/utils/logger.py`
+  - [x] Níveis INFO/WARNING/ERROR habilitados
+  - [x] Timestamps em cada linha de log (via `RichHandler`)
 
-- [ ] **B-004** `[RF01, RF02, RT11]` — CLI com menu de 10 temas + número de dias
-  - [ ] Exibe **menu numerado (1–10)** com os temas pré-definidos (ver `docs/escopo_mvp.md` §3)
-  - [ ] Aceita seleção do usuário (entrada `1` a `10`)
-  - [ ] Aceita número de dias `N` (inteiro **`1 ≤ N ≤ 10`**)
-  - [ ] Exibe a seleção confirmada (tema + N dias) antes de iniciar
+- [x] **B-004** `[RF01, RF02, RT11]` — CLI com menu de 10 temas + número de dias
+  - [x] Exibe **menu numerado (1–10)** com os temas pré-definidos (ver `docs/escopo_mvp.md` §3)
+  - [x] Aceita seleção do usuário (entrada `1` a `10`)
+  - [x] Aceita número de dias `N` (inteiro **`1 ≤ N ≤ 10`**)
+  - [x] Exibe a seleção confirmada (tema + N dias) antes de iniciar
 
 - [ ] **B-005** `[RT06]` — Cliente LLM abstraído
   - [ ] Interface `LLMClient` em `src/genai/llm_client.py`
   - [ ] Pelo menos uma implementação concreta funcional
   - [ ] API key carregada do `.env`
 
-- [ ] **B-006** `[RF03, RF04, RT11]` — Validação determinística de input (guardrail de menu)
-  - [ ] Modelo **Pydantic v2** (`UserInput`) com campos `tema_id: int` e `dias: int`
-  - [ ] Validação da seleção (somente valores `1–10` aceitos)
-  - [ ] Validação do número de dias (`1 ≤ N ≤ 10`)
-  - [ ] Mensagens de erro amigáveis em pt-BR (mapeando `ValidationError` → texto)
-  - [ ] **Re-solicita** a entrada em caso de input inválido (com limite de tentativas)
-  - [ ] **Sem chamada a LLM** — validação puramente determinística
+- [x] **B-006** `[RF03, RF04, RT11]` — Validação determinística de input (guardrail de menu)
+  - [x] Modelo **Pydantic v2** (`UserInput`) com campos `topic: Topic` e `days: int`
+  - [x] Validação da seleção (somente valores `1–10` aceitos via `IntEnum`)
+  - [x] Validação do número de dias (`1 ≤ N ≤ 10`)
+  - [x] Mensagens de erro amigáveis em pt-BR (mapeando `ValidationError` → texto)
+  - [x] **Re-solicita** a entrada em caso de input inválido (com limite de tentativas)
+  - [x] **Sem chamada a LLM** — validação puramente determinística
 
 - [ ] **B-007** `[RT05, RF05]` — Camada base do Selenium (driver factory)
-  - [ ] `src/pages/base_page.py` com `BasePage`
-  - [ ] Driver factory com `webdriver-manager`
+  - [ ] `src/pages/base_page.py` com `BasePage` (waits, find helpers, scroll)
+  - [ ] Driver factory em `src/utils/driver_factory.py` com **`chromedriver-autoinstaller`**
   - [ ] Browser abre em modo **visível** (não-headless)
+  - [ ] Locators isolados em `src/locators/` (um arquivo por site)
+  - [ ] Steps de alto nível em `src/steps/` (um arquivo por fluxo)
 
 - [ ] **B-008** `[RF07]` — Page Object do **Site 1** (coleta básica)
   - [ ] PO específico com seletores isolados
@@ -259,3 +263,5 @@ Para qualquer item ser considerado **concluído (`[x]`)**, deve atender:
 | 0.1 | 2026-04-30 | Leonardo Santos | Versão inicial do backlog (R1, R2, R3). |
 | 0.2 | 2026-04-30 | Leonardo Santos | Atualiza B-004 (menu de 10 temas + N dias) e B-006 (validação determinística no lugar do guardrail LLM). |
 | 0.3 | 2026-04-30 | Leonardo Santos | Adiciona **RT11 (Pydantic v2)**; limita N a `1–10` em B-004; reforça B-006 com modelo Pydantic. |
+| 0.4 | 2026-04-30 | Leonardo Santos | Refina **RT01** (POM com `locators/`, `pages/`, `steps/`, `models/`); troca **RT05** para `chromedriver-autoinstaller`; adiciona requisitos PEP8/docstrings em B-001 e Locators/Steps em B-007. |
+| 0.5 | 2026-04-30 | Leonardo Santos | Marca **B-001, B-002, B-003, B-004 e B-006 como concluídos** (estrutura modular, config via `.env`, logger, menu CLI e validação Pydantic implementados e testados). |

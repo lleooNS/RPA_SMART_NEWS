@@ -119,7 +119,7 @@ dias) deseja consultar, dentro do limite **1 ≤ N ≤ 10**.
 | **RNF01** | Tecnologia | Implementado em **Python 3.11+**. |
 | **RNF02** | Compatibilidade | Executável em **Windows, Linux e macOS**. |
 | **RNF03** | Arquitetura | A automação web deve seguir o padrão **Page Object Model (POM)**, com `BasePage` reaproveitável. |
-| **RNF04** | Tecnologia | Automação web baseada em **Selenium 4** com `webdriver-manager` (gestão automática do driver). |
+| **RNF04** | Tecnologia | Automação web baseada em **Selenium 4** com **`chromedriver-autoinstaller`** (gestão automática do ChromeDriver). |
 | **RNF05** | Configuração | Parâmetros sensíveis (API keys) e de comportamento (delays, headless, output dir) **devem ser carregados via `.env`** (não versionado), com `.env.example` documentado. |
 | **RNF06** | Observabilidade | Logs **estruturados** (níveis INFO/WARNING/ERROR), com timestamps. |
 | **RNF07** | Performance | Execução completa em até **5 minutos** para um tema comum, considerando 3 sites e ~30 notícias coletadas (alvo, não bloqueante). |
@@ -251,3 +251,4 @@ end-to-end:
 | 0.1 | 2026-04-30 | Leonardo Santos | Versão inicial do escopo do MVP. |
 | 0.2 | 2026-04-30 | Leonardo Santos | Substitui input livre de tema por **menu fixo de 10 temas**; remove guardrail LLM no input; ajusta RF01/RF03/RF04, critérios de aceite e riscos. |
 | 0.3 | 2026-04-30 | Leonardo Santos | Limita N a **1–10 dias** (RF02); adiciona **RNF19 (Pydantic v2)**; reforça RNF17 (código limpo + docstrings curtas); ajusta RF03/RF04 e critério de aceite #2. |
+| 0.4 | 2026-04-30 | Leonardo Santos | Troca `webdriver-manager` por **`chromedriver-autoinstaller`** em RNF04. |

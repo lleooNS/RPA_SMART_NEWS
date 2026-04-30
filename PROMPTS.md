@@ -26,6 +26,8 @@
 - [8. Diagramas de arquitetura (Mermaid)](#8-diagramas-de-arquitetura-mermaid)
 - [9. Mudança no input do usuário — menu fixo de 10 temas](#9-mudança-no-input-do-usuário--menu-fixo-de-10-temas)
 - [10. Limite de N (1–10 dias) e adoção de Pydantic v2](#10-limite-de-n-110-dias-e-adoção-de-pydantic-v2)
+- [11. Briefing local para agentes (CURSOR_CONTEXT.md)](#11-briefing-local-para-agentes-cursor_contextmd)
+- [12. Início da implementação — estrutura, config, logger, menu e validação](#12-início-da-implementação--estrutura-config-logger-menu-e-validação)
 - [Backlog de prompts (planejado)](#backlog-de-prompts-planejado)
 
 ---
@@ -464,6 +466,148 @@ nessa etapa.
 
 ---
 
+## 11. Briefing local para agentes (CURSOR_CONTEXT.md)
+
+| Campo | Valor |
+|---|---|
+| **Data** | 2026-04-30 |
+| **Etapa** | Setup / Produtividade |
+| **Modelo/Ferramenta** | Cursor (Claude Opus 4.7) |
+
+### Prompt
+> "Crie um arquivo para o cursor conseguir obter o contexto de todo o
+> projeto, caso seja necessário abrir um novo chat zerado com outro
+> agente. Este arquivo deve ser atualizado no decorrer do projeto.
+> Ele deve ser adicionado no `.gitignore`."
+
+### Saída / Realizado
+- Criação de **`CURSOR_CONTEXT.md`** na raiz do projeto, com 13
+  seções cobrindo:
+  - Como o agente deve usar o arquivo (instruções de bootstrap em
+    chat novo).
+  - Papel do agente (especialista no curso UFG / módulo).
+  - Identidade do projeto (nome, curso, módulo, idioma, autor git).
+  - Objetivo do produto e lista canônica dos 10 temas.
+  - Stack decidida e a decidir.
+  - Convenções (código, git, documentação, PowerShell).
+  - Estrutura atual e planejada do projeto.
+  - Decisões-chave já tomadas.
+  - Estado atual (roadmap + histórico de commits + fase).
+  - Mapa de referências dos arquivos-chave.
+  - Próximas decisões pendentes (LLM, embeddings, PDF, sites,
+    estratégia de busca, clustering).
+  - Perfil de interação esperado pelo usuário.
+  - Histórico de atualizações do próprio arquivo.
+- Atualização do **`.gitignore`**: adicionada entrada
+  `CURSOR_CONTEXT.md` na seção *Cursor*. Validado com
+  `git check-ignore -v` que o arquivo está sendo ignorado.
+- Atualização do `PROMPTS.md` com este registro.
+
+### Artefatos
+- `RPA_SMART_NEWS/CURSOR_CONTEXT.md` *(não versionado)*
+- `RPA_SMART_NEWS/.gitignore` *(atualizado)*
+- `RPA_SMART_NEWS/PROMPTS.md` *(atualizado)*
+
+---
+
+## 12. Início da implementação — estrutura, config, logger, menu e validação
+
+| Campo | Valor |
+|---|---|
+| **Data** | 2026-04-30 |
+| **Etapa** | Implementação (R1, primeira iteração) |
+| **Modelo/Ferramenta** | Cursor (Claude Opus 4.7) |
+
+### Prompt
+> "Agora vamos iniciar o desenvolvimento seguindo os arquivos
+> `backlog.md` e `escopo_mvp.md`. No Python, vamos utilizar o PEP8,
+> docstring para documentação e tratamento de erros. No POM, vamos
+> utilizar uma estrutura de pastas dentro de uma pasta `src/`. Podemos
+> ter uma `BasePage`, pastas como: Locators, Pages, Steps. Utilizar o
+> `chromedriver-autoinstaller`. Modifique o arquivo `backlog.md` antes,
+> caso seja necessário. Nesta primeira etapa, vamos estruturar tudo,
+> organizar e construir até a parte que obtem a entrada do usuário.
+> Antes de abrir o navegador."
+
+### Saída / Realizado
+
+#### Decisões aplicadas
+1. **Estrutura POM**: `src/locators/`, `src/pages/` (com `BasePage`),
+   `src/steps/`, `src/services/`, `src/models/`, `src/utils/`,
+   `src/genai/`, `src/pdf/` + `tests/` na raiz.
+2. **Driver**: `chromedriver-autoinstaller` no lugar de
+   `webdriver-manager`.
+3. **Validação**: `pydantic-settings` para config + `pydantic` para
+   `UserInput` e `Topic` (IntEnum).
+4. **Convenções**: PEP8, type hints, docstrings curtas, tratamento
+   de erros explícito (`MenuAbortedError`, `ValidationError`).
+
+#### Backlog atualizado (v0.5)
+- **RT01** detalhado com a nova estrutura.
+- **RT05** trocado para `chromedriver-autoinstaller`.
+- **B-001** atualizado com PEP8 + docstrings.
+- **B-007** atualizado com Locators/Steps + `chromedriver-autoinstaller`.
+- **B-001, B-002, B-003, B-004, B-006** marcados como **concluídos**.
+
+#### Documentos atualizados
+- `docs/backlog.md` (v0.4 → v0.5): RT01/RT05/B-001/B-007 + checklist
+  de B-001..B-006 marcado.
+- `docs/escopo_mvp.md` (v0.4): RNF04 troca para
+  `chromedriver-autoinstaller`.
+- `docs/arquitetura.md` (v0.4): nó `Driver Factory` atualizado.
+- `README.md`: stack tecnológica + estrutura planejada atualizadas.
+- `CURSOR_CONTEXT.md` (v0.2): stack, estrutura, fase atual.
+
+#### Dependências
+- **Removida**: `webdriver-manager`.
+- **Adicionadas**: `chromedriver-autoinstaller>=0.6.4` e
+  `pydantic-settings>=2.2.0`.
+
+#### Código implementado
+| Arquivo | Responsabilidade |
+|---|---|
+| `src/__init__.py` | Pacote raiz com `__version__`. |
+| `src/locators/__init__.py` | Placeholder (seletores por site). |
+| `src/pages/__init__.py` | Placeholder (Page Objects). |
+| `src/pages/base_page.py` | `BasePage` placeholder (será expandida em B-007). |
+| `src/steps/__init__.py` | Placeholder (fluxos de alto nível). |
+| `src/services/__init__.py` | Placeholder. |
+| `src/services/menu.py` | `display_topics()`, `collect_user_input()`, `MenuAbortedError`, formatação amigável de `ValidationError`. |
+| `src/services/orchestrator.py` | `run()` com banner, menu, coleta, confirmação e exit codes. |
+| `src/models/__init__.py` | Placeholder. |
+| `src/models/topics.py` | `Topic` (IntEnum 1–10) e `TOPIC_LABELS` em pt-BR. |
+| `src/models/user_input.py` | `UserInput` (Pydantic v2 frozen, `topic: Topic`, `days: int 1–10`). |
+| `src/utils/__init__.py` | Placeholder. |
+| `src/utils/config.py` | `Settings` (Pydantic Settings v2) + `get_settings()` cacheado. |
+| `src/utils/logger.py` | `setup_logger()` e `get_logger()` com `RichHandler`. |
+| `src/genai/__init__.py` | Placeholder. |
+| `src/pdf/__init__.py` | Placeholder. |
+| `tests/__init__.py` | Placeholder da suíte. |
+| `main.py` | Entrypoint enxuto que delega para `orchestrator.run()`. |
+| `.env.example` | Variáveis: `LOG_LEVEL`, `MAX_DAYS`, `MAX_RETRIES`, `OUTPUT_DIR`. |
+
+#### Validação (smoke tests)
+| Cenário | Exit code | Resultado |
+|---|---|---|
+| Input válido (`3`, `5`) | `0` | OK — confirma "Esportes / 5 dia(s)". |
+| 2 inputs inválidos seguidos de válido | `0` | OK — exibe contagem de tentativas restantes. |
+| 3 inputs inválidos consecutivos | `1` | OK — `MenuAbortedError` tratado. |
+
+### Artefatos
+- `RPA_SMART_NEWS/src/**` *(estrutura modular completa)*
+- `RPA_SMART_NEWS/tests/__init__.py`
+- `RPA_SMART_NEWS/main.py` *(reescrito)*
+- `RPA_SMART_NEWS/.env.example`
+- `RPA_SMART_NEWS/requirements.txt` *(atualizado)*
+- `RPA_SMART_NEWS/docs/backlog.md` *(v0.5)*
+- `RPA_SMART_NEWS/docs/escopo_mvp.md` *(v0.4)*
+- `RPA_SMART_NEWS/docs/arquitetura.md` *(v0.4)*
+- `RPA_SMART_NEWS/README.md` *(stack + estrutura atualizadas)*
+- `RPA_SMART_NEWS/CURSOR_CONTEXT.md` *(v0.2)*
+- `RPA_SMART_NEWS/PROMPTS.md` *(este registro)*
+
+---
+
 ## Backlog de prompts (planejado)
 
 > Lista de prompts previstos para as próximas etapas. Será movida para
@@ -492,4 +636,4 @@ nessa etapa.
 
 ---
 
-_Última atualização: 2026-04-30 (limite de N=1–10 dias + adoção de Pydantic v2)_
+_Última atualização: 2026-04-30 (R1 — primeira iteração de implementação)_
