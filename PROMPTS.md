@@ -20,6 +20,10 @@
 - [2. Bootstrap do projeto](#2-bootstrap-do-projeto)
 - [3. Inicialização do repositório git](#3-inicialização-do-repositório-git)
 - [4. Criação do README.md](#4-criação-do-readmemd)
+- [5. Commit inicial](#5-commit-inicial)
+- [6. Documento de escopo do MVP](#6-documento-de-escopo-do-mvp)
+- [7. Backlog do projeto (R1/R2/R3)](#7-backlog-do-projeto-r1r2r3)
+- [8. Diagramas de arquitetura (Mermaid)](#8-diagramas-de-arquitetura-mermaid)
 - [Backlog de prompts (planejado)](#backlog-de-prompts-planejado)
 
 ---
@@ -186,6 +190,131 @@
 
 ---
 
+## 5. Commit inicial
+
+| Campo | Valor |
+|---|---|
+| **Data** | 2026-04-30 |
+| **Etapa** | Setup |
+| **Modelo/Ferramenta** | Cursor (Claude Opus 4.7) |
+
+### Prompt
+> "Gere uma mensagem de commit no padrão Conventional Commits. Apenas
+> uma linha de commit. Realize o commit inicial. Depois mostre o git
+> history para que eu possa verificar se a mensagem foi commitada
+> corretamente."
+
+### Saída / Realizado
+- Commit inicial realizado com a mensagem
+  `chore: bootstrap inicial do projeto RPA_SMART_NEWS`.
+- Hash do commit: `0b3e226` (root-commit, branch `main`).
+- 5 arquivos versionados: `.gitignore`, `PROMPTS.md`, `README.md`,
+  `main.py`, `requirements.txt` (717 inserções).
+- `.venv/` corretamente ignorado pelo `.gitignore`.
+
+### Artefatos
+- Commit `0b3e226` no repositório local.
+
+---
+
+## 6. Documento de escopo do MVP
+
+| Campo | Valor |
+|---|---|
+| **Data** | 2026-04-30 |
+| **Etapa** | Concepção / Documentação |
+| **Modelo/Ferramenta** | Cursor (Claude Opus 4.7) |
+
+### Prompt
+> "Crie um arquivo `docs/escopo_mvp.md` com o escopo do projeto,
+> trazendo o objetivo, requisitos funcionais, não funcionais e fora de
+> escopo. Linguagem técnica, direta, em Markdown. Forneça o conteúdo
+> completo. Este arquivo também deve ser atualizado no decorrer do
+> projeto."
+
+### Saída / Realizado
+- Criação da pasta `docs/` e do arquivo `docs/escopo_mvp.md`.
+- Conteúdo estruturado em 9 seções: objetivo, personas/premissas,
+  16 RFs, 18 RNFs, aplicação da GenAI no ciclo de desenvolvimento,
+  15 itens fora de escopo, critérios de aceite, riscos e mitigações,
+  glossário e histórico de revisões.
+- Atualização do `PROMPTS.md` com este registro.
+
+### Artefatos
+- `RPA_SMART_NEWS/docs/escopo_mvp.md`
+- `RPA_SMART_NEWS/PROMPTS.md` *(atualizado)*
+
+---
+
+## 7. Backlog do projeto (R1/R2/R3)
+
+| Campo | Valor |
+|---|---|
+| **Data** | 2026-04-30 |
+| **Etapa** | Planejamento |
+| **Modelo/Ferramenta** | Cursor (Claude Opus 4.7) |
+
+### Prompt
+> "Crie o arquivo `docs/backlog.md`, utilize Checklist Markdown. O
+> produto será entregue em 3 releases: core, qualidade e entrega final.
+> Crie backlog mínimo com IDs RF/RT e critérios de aceite."
+
+### Saída / Realizado
+- Criação de `docs/backlog.md` em formato checklist Markdown.
+- Definição de **10 Requisitos Técnicos (RT01–RT10)** complementares
+  aos RFs do escopo.
+- Estruturação em **3 releases**:
+  - **R1 — Core**: 14 itens (`B-001` a `B-014`) cobrindo o fluxo
+    end-to-end mínimo (estrutura modular, CLI, validação de tema, POs
+    dos 3 sites, sumarização básica, PDF inicial).
+  - **R2 — Qualidade**: 10 itens (`B-101` a `B-110`) cobrindo
+    humanização, robustez, deduplicação semântica, clustering,
+    sumarização por cluster, logs e testes (cobertura ≥60%).
+  - **R3 — Entrega Final**: 7 itens (`B-201` a `B-207`) cobrindo
+    polimento do PDF, atualização da documentação, tag de release,
+    demo e apresentação acadêmica.
+- Cada item traz **referências** aos `RF##` (escopo) e/ou `RT##`,
+  além de **critérios de aceite aninhados** como sub-checklist.
+- Definição de **DoD (Definition of Done)** unificada.
+- Atualização do `PROMPTS.md` com este registro.
+
+### Artefatos
+- `RPA_SMART_NEWS/docs/backlog.md`
+- `RPA_SMART_NEWS/PROMPTS.md` *(atualizado)*
+
+---
+
+## 8. Diagramas de arquitetura (Mermaid)
+
+| Campo | Valor |
+|---|---|
+| **Data** | 2026-04-30 |
+| **Etapa** | Design / Arquitetura |
+| **Modelo/Ferramenta** | Cursor (Claude Opus 4.7) |
+
+### Prompt
+> "Crie o arquivo bloco Mermaid, simples, legível e versionável. Gere
+> diagrama Mermaid de componentes e fluxo de dados."
+
+### Saída / Realizado
+- Criação de `docs/arquitetura.md` em Markdown com **dois diagramas
+  Mermaid**:
+  - **Diagrama de componentes** (`flowchart TB`): visão estática
+    com 5 camadas agrupadas por `subgraph` — CLI/Bootstrap,
+    Serviços/Orquestração, Automação Web (POM), GenAI e Saída.
+  - **Diagrama de fluxo de dados** (`flowchart LR`): pipeline
+    completo do input do usuário até a entrega do PDF, incluindo o
+    desvio do guardrail para temas restritos.
+- Inclusão de **legenda** explicando as notações Mermaid usadas.
+- Histórico de revisões interno.
+- Atualização do `PROMPTS.md` com este registro.
+
+### Artefatos
+- `RPA_SMART_NEWS/docs/arquitetura.md`
+- `RPA_SMART_NEWS/PROMPTS.md` *(atualizado)*
+
+---
+
 ## Backlog de prompts (planejado)
 
 > Lista de prompts previstos para as próximas etapas. Será movida para
@@ -214,4 +343,4 @@
 
 ---
 
-_Última atualização: 2026-04-30_
+_Última atualização: 2026-04-30 (diagramas de arquitetura)_
