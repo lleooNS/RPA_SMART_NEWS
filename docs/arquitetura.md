@@ -32,20 +32,21 @@ flowchart TB
 
     subgraph SVC["Serviços / Orquestração"]
         ORCH["Orchestrator"]
-        MENU["Theme Menu + Validator<br/>(Pydantic v2 — 10 temas + 1–10 dias)"]
+        MENU["Theme Menu + Validator<br/>(Pydantic v2 — 10 temas)"]
         COLL["News Collector"]
-        FILT["Date Filter"]
         DEDUP["Deduplicator<br/>(URL + título + semântica)"]
         CLUS["Clusterer"]
         SUMM["Summarizer<br/>(por cluster + executivo)"]
     end
 
-    subgraph WEB["Automação Web (POM)"]
+    subgraph WEB["Automação Web (POM — 1 Page Object por site)"]
         DRV["Driver Factory<br/>(Selenium + chromedriver-autoinstaller)"]
         BP["BasePage"]
-        S1["Site 1 — Page Object"]
-        S2["Site 2 — Page Object"]
-        S3["Site 3 — Page Object"]
+        BNP["BaseNewsPage<br/>(editoria → busca interna)"]
+        G1["G1Page<br/>(g1.globo.com)"]
+        BBC["BBCBrasilPage<br/>(bbc.com/portuguese)"]
+        AB["AgenciaBrasilPage<br/>(agenciabrasil.ebc.com.br)"]
+        R7["R7Page<br/>(r7.com)"]
         HUM["Humanize Helper<br/>(scroll + delays)"]
     end
 
@@ -65,20 +66,22 @@ flowchart TB
 
     ORCH --> MENU
     ORCH --> COLL
-    ORCH --> FILT
     ORCH --> DEDUP
     ORCH --> CLUS
     ORCH --> SUMM
     ORCH --> PDF
 
-    COLL --> DRV
-    DRV --> BP
-    BP --> S1
-    BP --> S2
-    BP --> S3
-    S1 --> HUM
-    S2 --> HUM
-    S3 --> HUM
+    COLL --> G1
+    COLL --> BBC
+    COLL --> AB
+    COLL --> R7
+    G1 --> BNP
+    BBC --> BNP
+    AB --> BNP
+    R7 --> BNP
+    BNP --> BP
+    BP --> DRV
+    BP --> HUM
 
     DEDUP --> EMB
     CLUS --> EMB
@@ -97,16 +100,15 @@ usuário até a entrega do PDF.
 
 ```mermaid
 flowchart LR
-    U([Usuário]) -->|escolha do menu + N dias| CLI["CLI<br/>(main.py)"]
-    CLI -->|seleção 1–10 + N (1–10)| VG{"Validação<br/>(Pydantic v2)"}
+    U([Usuário]) -->|escolha do menu| CLI["CLI<br/>(main.py)"]
+    CLI -->|seleção 1–10| VG{"Validação<br/>(Pydantic v2)"}
     VG -->|inválido| ERR["Mensagem amigável<br/>+ re-solicita input"]
     ERR -.->|nova tentativa| CLI
-    VG -->|válido| WEB["Coleta Web<br/>(3 sites — POM)"]
-    WEB -->|notícias brutas| FD["Filtro<br/>por últimos N dias"]
-    FD -->|notícias filtradas| DD1["Dedupe<br/>URL + título"]
-    DD1 -->|notícias únicas| DD2["Dedupe semântica<br/>(embeddings)"]
-    DD2 -->|notícias deduplicadas| CL["Clustering<br/>+ nomeação (LLM)"]
-    CL -->|grupos temáticos| SU1["Sumarização<br/>por cluster (LLM)"]
+    VG -->|válido| WEB["Coleta nas 4 fontes fixas<br/>(G1, BBC News Brasil,<br/>Agência Brasil, R7)"]
+    WEB -->|notícias brutas| DD1["Dedupe<br/>URL + título"]
+    DD1 -->|notícias únicas| DD2["Dedupe semântica<br/>(embeddings — R2)"]
+    DD2 -->|notícias deduplicadas| CL["Clustering<br/>+ nomeação (LLM — R2)"]
+    CL -->|grupos temáticos| SU1["Sumarização<br/>por cluster (LLM — R2)"]
     SU1 -->|resumos por grupo| SU2["Resumo executivo<br/>consolidado (LLM)"]
     SU2 -->|conteúdo final| PDF["Geração de PDF"]
     PDF -->|arquivo .pdf| OUT[("output/")]
@@ -136,3 +138,5 @@ flowchart LR
 | 0.2 | 2026-04-30 | Leonardo Santos | Substitui guardrail LLM por **menu determinístico** (10 temas + N dias) nos dois diagramas. |
 | 0.3 | 2026-04-30 | Leonardo Santos | Inclui **Pydantic v2** nos labels de validação e o limite **1–10 dias**. |
 | 0.4 | 2026-04-30 | Leonardo Santos | Troca `webdriver-manager` por **`chromedriver-autoinstaller`** no nó `Driver Factory`. |
+| 0.5 | 2026-04-30 | Leonardo Santos | **Opção E aplicada**: discovery e coleta migram para `news.google.com`; introduz nós `GoogleNewsPage`, `Adapter Registry`, `GenericNewsAdapter` e (futuros) adapters curados. Filtro de janela passa a ser **local** sobre `published_at`. |
+| 0.6 | 2026-04-30 | Leonardo Santos | **Reset arquitetural**: remove integração com Google (`GoogleNewsPage`, `Adapter Registry`, `GenericNewsAdapter`, filtro de janela). Volta para **POM por site fixo** (G1, BBC News Brasil, Agência Brasil, R7), com `BaseNewsPage` que tenta editoria → busca interna. Remove o nó "número de dias" do fluxo — a única entrada do usuário é o tema. |
