@@ -79,11 +79,11 @@ RFs do escopo, mas necessários para a entrega.
   - [x] Níveis INFO/WARNING/ERROR habilitados
   - [x] Timestamps em cada linha de log (via `RichHandler`)
 
-- [ ] **B-004** `[RF01, RT11]` — CLI com menu de 10 temas
-  - [ ] Exibe **menu numerado (1–10)** com os temas pré-definidos (ver `docs/escopo_mvp.md` §3)
-  - [ ] Aceita seleção do usuário (entrada `1` a `10`)
-  - [ ] Exibe o tema confirmado antes de iniciar a coleta
-  - [ ] **Sem entrada de número de dias** — única entrada é o tema
+- [x] **B-004** `[RF01, RT11]` — CLI com menu de 10 temas
+  - [x] Exibe **menu numerado (1–10)** com os temas pré-definidos (ver `docs/escopo_mvp.md` §3)
+  - [x] Aceita seleção do usuário (entrada `1` a `10`)
+  - [x] Exibe o tema confirmado antes de iniciar a coleta
+  - [x] **Sem entrada de número de dias** — única entrada é o tema
 
 - [x] **B-005** `[RT06]` — Cliente LLM abstraído
   - [x] Interface `LLMClient` (Protocol) em `src/genai/llm_client.py`
@@ -92,12 +92,12 @@ RFs do escopo, mas necessários para a entrega.
   - [x] Factory em `src/genai/factory.py` resolve provider via `LLM_PROVIDER`
   - [x] API key carregada do `.env` (`LLM_API_KEY`)
 
-- [ ] **B-006** `[RF02, RF03, RT11]` — Validação determinística do tema
-  - [ ] Modelo **Pydantic v2** (`UserInput`) com campo `topic: Topic`
-  - [ ] Validação da seleção (somente valores `1–10` aceitos via `IntEnum`)
-  - [ ] Mensagens de erro amigáveis em pt-BR (mapeando `ValidationError` → texto)
-  - [ ] **Re-solicita** a entrada em caso de input inválido (com limite de tentativas)
-  - [ ] **Sem chamada a LLM** — validação puramente determinística
+- [x] **B-006** `[RF02, RF03, RT11]` — Validação determinística do tema
+  - [x] Modelo **Pydantic v2** (`UserInput`) com campo `topic: Topic`
+  - [x] Validação da seleção (somente valores `1–10` aceitos via `IntEnum`)
+  - [x] Mensagens de erro amigáveis em pt-BR (mapeando `ValidationError` → texto)
+  - [x] **Re-solicita** a entrada em caso de input inválido (com limite de tentativas)
+  - [x] **Sem chamada a LLM** — validação puramente determinística
 
 - [x] **B-007** `[RT05, RF04]` — Camada base do Selenium (driver factory)
   - [x] `src/pages/base_page.py` com `BasePage` real (waits, find helpers, scroll humanizado, click tolerante)
@@ -105,43 +105,43 @@ RFs do escopo, mas necessários para a entrega.
   - [x] Browser abre em modo **visível** (HEADLESS configurável; default `false`)
   - [x] Helpers de humanização em `src/utils/humanize.py` (scroll incremental + delays)
 
-- [ ] **B-008** `[RF06, RF07, RT01]` — Page Objects das 4 fontes fixas
-  - [ ] `src/pages/base_news_page.py` com `BaseNewsPage` (editoria → busca interna; extrai título, URL, fonte, `published_at`, snippet)
-  - [ ] `src/pages/g1_page.py` (`G1Page`) cobrindo as editorias suportadas e a busca de `g1.globo.com/busca`
-  - [ ] `src/pages/bbc_brasil_page.py` (`BBCBrasilPage`) com a busca interna `bbc.com/portuguese/search`
-  - [ ] `src/pages/agencia_brasil_page.py` (`AgenciaBrasilPage`) com editorias e busca interna
-  - [ ] `src/pages/r7_page.py` (`R7Page`) com editorias e busca interna
-  - [ ] Locators isolados em `src/locators/<site>_locators.py` (1 arquivo por site)
+- [x] **B-008** `[RF06, RF07, RT01]` — Page Objects das 4 fontes fixas
+  - [x] `src/pages/base_news_page.py` com `BaseNewsPage` (editoria → busca interna; extrai título, URL, fonte, `published_at`, snippet)
+  - [x] `src/pages/g1_page.py` (`G1Page`) cobrindo as editorias suportadas e a busca de `g1.globo.com/busca`
+  - [x] `src/pages/bbc_brasil_page.py` (`BBCBrasilPage`) com a busca interna `bbc.com/portuguese/search`
+  - [x] `src/pages/agencia_brasil_page.py` (`AgenciaBrasilPage`) com editorias e busca interna
+  - [x] `src/pages/r7_page.py` (`R7Page`) com editorias e busca interna
+  - [x] Locators isolados em `src/locators/<site>_locators.py` (1 arquivo por site)
 
-- [ ] **B-009** `[RF06, RF07]` — Coleta orquestrada nas 4 fontes
-  - [ ] `src/steps/coleta_step.py` itera sobre os Page Objects das 4 fontes
-  - [ ] Limite máximo configurável por site (`MAX_NEWS_PER_SITE`)
-  - [ ] Logs por site informam: estratégia usada (editoria/busca) + contagem coletada
-  - [ ] Notícias com `published_at` extraído são ordenadas por data (mais recentes primeiro)
+- [x] **B-009** `[RF06, RF07]` — Coleta orquestrada nas 4 fontes
+  - [x] `src/steps/coleta_step.py` itera sobre os Page Objects das 4 fontes
+  - [x] Limite máximo configurável por site (`MAX_NEWS_PER_SITE`)
+  - [x] Logs por site informam: estratégia usada (editoria/busca) + contagem coletada
+  - [x] Notícias com `published_at` extraído são ordenadas por data (mais recentes primeiro)
 
-- [ ] **B-010** `[RF14, RNF12]` — Tolerância a falhas
-  - [ ] Falha em um site é capturada e logada — os demais continuam
-  - [ ] Timeouts explícitos via `WebDriverWait` (configurável por `SELENIUM_TIMEOUT`)
-  - [ ] Pipeline aborta com mensagem amigável apenas se **todas** as fontes falharem
+- [x] **B-010** `[RF14, RNF12]` — Tolerância a falhas
+  - [x] Falha em um site é capturada e logada — os demais continuam
+  - [x] Timeouts explícitos via `WebDriverWait` (configurável por `SELENIUM_TIMEOUT`)
+  - [x] Pipeline aborta com mensagem amigável apenas se **todas** as fontes falharem
 
 - [x] **B-011** `[RF08]` — Deduplicação por URL e título
   - [x] Normalização de URL (`src/utils/dedupe.py`: lowercase host, sem querystring/fragmento, sem trailing slash)
   - [x] Hash de título normalizado (lowercase, sem acentos, sem pontuação, espaços colapsados)
   - [x] Itens duplicados são removidos no orquestrador antes da sumarização
 
-- [ ] **B-012** `[RF10, RF11]` — Sumarização consolidada (versão simples)
-  - [ ] Prompt em `src/genai/prompts.py` (system + user) sem alucinação ("apenas com base nas manchetes")
-  - [ ] `summarize(...)` em `src/genai/summarizer.py` produz `Summary` (Pydantic) — **sem campo `days`**
-  - [ ] Resumo, bullets extraídos e lista de `SourceRef` para o PDF (R1)
-  - [ ] Versão por cluster fica para o R2 (B-106)
+- [x] **B-012** `[RF10, RF11]` — Sumarização consolidada (versão simples)
+  - [x] Prompt em `src/genai/prompts.py` (system + user) sem alucinação ("apenas com base nas manchetes")
+  - [x] `summarize(...)` em `src/genai/summarizer.py` produz `Summary` (Pydantic) — **sem campo `days`**
+  - [x] Resumo, bullets extraídos e lista de `SourceRef` para o PDF (R1)
+  - [x] Versão por cluster fica para o R2 (B-106)
 
-- [ ] **B-013** `[RT08, RF12]` — Geração de PDF (versão básica)
-  - [ ] PDF gerado em `output/<timestamp>_<tema>.pdf`
-  - [ ] Conteúdo: título, tema, resumo executivo, lista de fontes
-  - [ ] Sobrescrita controlada (não duplica em uma mesma execução)
+- [x] **B-013** `[RT08, RF12]` — Geração de PDF (versão básica)
+  - [x] PDF gerado em `output/<timestamp>_<tema>.pdf` (via `fpdf2` em `src/pdf/report.py`)
+  - [x] Conteúdo: título, tema, resumo executivo, pontos-chave (bullets) e lista de fontes (com URL clicável)
+  - [x] Sobrescrita controlada (param `overwrite`; quando `False` adiciona sufixo `_2`, `_3`, ...)
 
-- [ ] **B-014** `[RF15]` — Mensagem final ao usuário
-  - [ ] Caminho absoluto do PDF é exibido no terminal ao final
+- [x] **B-014** `[RF15]` — Mensagem final ao usuário
+  - [x] Caminho absoluto do PDF é exibido no terminal ao final (painel verde "Relatório final")
 
 **Critério de release R1:** executar `python main.py`, escolher um
 tema, e obter um PDF válido em `output/`, sem exceções não tratadas.
@@ -274,3 +274,4 @@ Para qualquer item ser considerado **concluído (`[x]`)**, deve atender:
 | 0.8 | 2026-04-30 | Leonardo Santos | **Reescreve a estratégia de coleta**: substitui sites fixos (G1/BBC/Agência Brasil) por **discovery dinâmico via Google Search** + **coleta dia-a-dia por site**. Reescreve B-008/B-009/B-010/B-011. Remove pages/locators/testes fixos. Adiciona `dates.py`, `domains.py`, `google_locators.py`, `google_search_page.py`, `discovery_step.py`. **160 testes / 73% cobertura**. |
 | 0.9 | 2026-04-30 | Leonardo Santos | **Opção E aplicada**: a estratégia `site:dominio + tbs=cdr:1` falhou em produção (zero resultados). Migra discovery e coleta para `news.google.com`, introduz `src/adapters/` (`SiteAdapter` Protocol + registry + `GenericNewsAdapter`) e aplica filtro de janela **localmente** sobre `published_at`. Remove `google_locators.py` e `google_search_page.py`. **B-008/B-009/B-010/B-011 reabertos e concluídos** com a nova estratégia. **179 testes / 74% cobertura**. |
 | 1.0 | 2026-04-30 | Leonardo Santos | **Reset arquitetural**: a integração com Google (discovery + adapter via `news.google.com`) foi removida por instabilidade em produção. Volta para a **lista fixa de 4 sites de confiança** (G1, BBC News Brasil, Agência Brasil, R7) com Page Objects dedicados. **Remove o input de "número de dias"** — entrada única passa a ser o tema. RFs do escopo renumerados (RF01–RF15). B-004/B-006/B-008/B-009/B-010/B-012 reabertos com a nova descrição; **B-011 (dedupe URL+título)** mantido como já concluído. Itens removidos: `B-101 (humanize)` permanece concluído; o antigo B-102 (robustez parcial) e o antigo B-103 (dedupe URL+título) foram absorvidos por B-010 e B-011 respectivamente. |
+| 1.1 | 2026-04-30 | Leonardo Santos | **Release 1 (Core) concluído**: marca como concluídos **B-004, B-006, B-008, B-009, B-010, B-012, B-013 e B-014**. Implementa `src/pdf/report.py` com `fpdf2` (capa textual, tema, metadados, resumo executivo, bullets, fontes com URL clicável), com filename `output/<timestamp>_<tema>.pdf` e sobrescrita controlada (`overwrite`). Orchestrator chama `generate_pdf` no fim do pipeline e exibe o caminho absoluto ao usuário. **164 testes / 79% cobertura** (módulo PDF: **100%**). |
