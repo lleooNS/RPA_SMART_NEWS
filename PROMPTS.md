@@ -1301,4 +1301,90 @@ INFO Discovery: dominios selecionados = ['globo.com', 'cnnbrasil.com.br', 'uol.c
 
 ---
 
-_Última atualização: 2026-04-30 (Reset arquitetural: remove Google + janela de N dias; volta para POs dedicados em G1, BBC News Brasil, Agência Brasil e R7. 146 testes / 78% cobertura)._
+---
+
+## 17. Sessão 2026-04-30 — R1 fechado: geração do PDF (`B-013`) + mensagem final (`B-014`)
+
+### Contexto
+Com o reset arquitetural concluído (sessão 16), restavam **B-013** (geração do PDF) e **B-014** (caminho absoluto exibido ao usuário) para fechar o **Release 1 — Core**. O objetivo desta sessão era implementar essas duas peças, marcar todos os itens já concluídos no `backlog.md`, validar via testes e atualizar a documentação.
+
+### Decisões
+- **Biblioteca de PDF:** **`fpdf2`** (escolha definitiva). Critérios:
+  pure-Python (sem deps de sistema como Cairo/wkhtmltopdf), API simples,
+  encoding latin-1 da fonte core Helvetica cobre todo o português
+  brasileiro, suporta hyperlinks e `multi_cell` com wrap por palavra/char.
+- **Layout do PDF (R1, simples):** uma única página textual com
+  cabeçalho ("RPA_SMART_NEWS"), tema, metadados (gerado em, provider
+  LLM, total de notícias coletadas), resumo executivo, pontos-chave
+  (quando houver) e lista numerada de fontes — cada uma com título +
+  site + URL clicável em azul. **Capa visual / paginação / sumário
+  ficam para o R3 (B-201).**
+- **Filename:** `output/<YYYYMMDD_HHMMSS>_<slug-do-tema>.pdf`
+  (slug ASCII com `unicodedata.normalize` removendo acentos —
+  `Crimes/Segurança` → `crimes_seguranca`).
+- **Sobrescrita controlada:** parâmetro `overwrite` (default `True`);
+  com `False`, se o arquivo já existir, gera `<base>_2.pdf`,
+  `<base>_3.pdf`, ... — útil quando duas execuções caem no mesmo
+  segundo.
+- **Robustez de encoding:** helper `_safe(text)` força latin-1 com
+  `errors="replace"` para evitar `UnicodeEncodeError` em emojis ou
+  caracteres exóticos que possam vir do LLM.
+- **Wrap de URLs longas:** `wrapmode="CHAR"` no `multi_cell` da URL
+  evita `FPDFException: Not enough horizontal space`.
+- **API do `multi_cell`:** uso explícito de `new_x=XPos.LMARGIN,
+  new_y=YPos.NEXT` em **todas** as chamadas (o default em fpdf2 2.8+
+  deixa o cursor na margem direita, o que quebrava a chamada seguinte).
+
+### Arquivos criados / alterados
+- **`src/pdf/report.py` (novo):** `generate_pdf(summary, *, settings,
+  output_dir, overwrite) -> Path` + helpers privados `_build_pdf`,
+  `_render_header`, `_render_metadata`, `_render_executive_summary`,
+  `_render_bullets`, `_render_sources`, `_safe`, `_build_filename`,
+  `_disambiguate`, `_slugify`. **100% de cobertura.**
+- **`src/services/orchestrator.py`:** importa `generate_pdf`, chama-o
+  após a sumarização (com try/except → exit code 5 em caso de falha)
+  e adiciona `_print_pdf_path()` que exibe um painel verde com o
+  caminho absoluto. Atualiza docstring do módulo descrevendo o
+  pipeline R1 end-to-end.
+- **`tests/test_pdf_report.py` (novo):** 18 testes —
+  `_slugify`, `_safe`, `_build_filename`, `_disambiguate`, `_build_pdf`
+  (com/sem bullets, com/sem fontes), `generate_pdf` (gera arquivo
+  válido, overwrite/no-overwrite, cria output_dir, aceita emoji,
+  funciona com lista mínima).
+- **`requirements.txt`:** `fpdf2>=2.7.0` fixado (saiu de placeholder
+  comentado para dependência ativa).
+- **`docs/backlog.md`:** marca `[x]` em **B-004, B-006, B-008, B-009,
+  B-010, B-012, B-013, B-014** (e em todos os seus CAs); adiciona a
+  versão **1.1** no histórico.
+- **`README.md`:** atualiza fluxo (passo 9 e 10 agora descrevem
+  geração e exibição do PDF), tabela de stack (fpdf2 fixado),
+  estrutura de pastas (mostra `src/pdf/report.py` e a pasta
+  `output/`), seção "Como executar" e roadmap (B-013/B-014 marcados,
+  itens R2/R3 reorganizados).
+- **`CURSOR_CONTEXT.md`:** atualiza §4 (passos 9 e 10), §6 (stack),
+  §8 (estrutura no disco com `pdf/report.py` e `output/`), §10 (fase
+  atual = "R1 — Core completo", lista de B-### concluídos atualizada),
+  §12 (decisão de PDF marcada `[x]`), §14 (fluxo do orquestrador
+  inclui PDF), histórico v0.9.
+
+### Resultado
+- **164 testes passando** (146 → 164: +18 do `test_pdf_report.py`).
+- **79% de cobertura** (78% → 79%; `src/pdf/report.py` em **100%**).
+- **Pipeline R1 end-to-end completo:** input (tema) → driver →
+  coleta nas 4 fontes (editoria → busca interna) → ordenação por
+  `published_at` → dedupe URL+título → sumarização (LLM) →
+  `generate_pdf` → painel verde com caminho absoluto.
+- **Critério de release R1 atendido** no nível de código + testes.
+  Validação manual end-to-end com Selenium real continua como passo
+  obrigatório antes de fechar o R1 em produção (locators podem
+  precisar de ajuste fino).
+
+### Artefatos
+- `src/pdf/report.py`, `src/services/orchestrator.py`.
+- `tests/test_pdf_report.py`.
+- `requirements.txt`, `docs/backlog.md`, `README.md`,
+  `CURSOR_CONTEXT.md`, `PROMPTS.md` *(este registro)*.
+
+---
+
+_Última atualização: 2026-04-30 (R1 — Core completo: geração de PDF via `fpdf2` + mensagem final com caminho absoluto. 164 testes / 79% cobertura)._
