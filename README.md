@@ -22,8 +22,10 @@ Inteligência Artificial Generativa** — **UFG**.
 - [Pré-requisitos](#pré-requisitos)
 - [Instalação](#instalação)
 - [Configuração](#configuração)
+- [Makefile](#makefile-atalhos-locais)
 - [Como executar](#como-executar)
 - [Testes](#testes)
+- [Versão e publicação no GitHub](#versão-e-publicação-no-github)
 - [Roadmap](#roadmap)
 - [Rastreabilidade dos prompts](#rastreabilidade-dos-prompts)
 - [Convenções de commit](#convenções-de-commit)
@@ -222,6 +224,7 @@ RPA_SMART_NEWS/
 ├── output/                          # PDFs gerados em runtime
 ├── tests/                           # Suíte pytest
 ├── .env.example                     # Variáveis de ambiente de exemplo
+├── Makefile                         # make install | run | test (opcional)
 ├── pyproject.toml                   # Config do pytest + coverage
 └── requirements.txt                 # Dependências fixadas
 ```
@@ -265,6 +268,10 @@ python -m pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
+Se o **GNU Make** estiver disponível, pode instalar as dependências com
+`make install` (veja [Makefile](#makefile-atalhos-locais) e o uso de
+`PYTHON=` para apontar para o interpretador da venv).
+
 ---
 
 ## Configuração
@@ -292,12 +299,52 @@ Copy-Item .env.example .env
 
 ---
 
+## Makefile (atalhos locais)
+
+Na raiz do projeto existe um **`Makefile`** com alvos para instalar
+dependências, rodar o RPA e executar os testes — útil em **Linux**,
+**macOS** ou no **Git Bash** / **WSL** no Windows.
+
+| Alvo | Comando equivalente | Descrição |
+|---|---|---|
+| `install` | `python -m pip install -r requirements.txt` | Instala as dependências do `requirements.txt`. |
+| `run` | `python main.py` | Inicia o fluxo interativo (menu → coleta → PDF). |
+| `test` | `python -m pytest` | Roda a suíte de testes configurada em `pyproject.toml`. |
+
+**Interpretador Python:** por padrão o `Makefile` usa `python`. Para
+forçar o Python da sua venv (recomendado), passe `PYTHON=` na linha de
+comando:
+
+```bash
+# Linux / macOS (Git Bash no Windows com caminhos Unix)
+make install PYTHON=.venv/bin/python
+make run PYTHON=.venv/bin/python
+make test PYTHON=.venv/bin/python
+```
+
+```powershell
+# PowerShell (Git Bash): use barras normais no caminho
+make install PYTHON=.venv/Scripts/python
+```
+
+**Windows sem `make`:** o PowerShell “puro” costuma não ter o comando
+`make`. Opções: usar **Git Bash**, **WSL**, ou instalar o GNU Make
+(por exemplo `choco install make` no Chocolatey).
+
+---
+
 ## Como executar
 
 Com o ambiente virtual ativado:
 
 ```bash
 python main.py
+```
+
+Equivalente com **Makefile** (se `make` estiver disponível):
+
+```bash
+make run PYTHON=.venv/bin/python
 ```
 
 > Estado atual (R1 — Core completo): `main.py` executa o pipeline
@@ -329,6 +376,12 @@ pytest                              # roda todos os testes
 pytest -v                           # modo verboso
 ```
 
+Com **Makefile**:
+
+```bash
+make test PYTHON=.venv/bin/python
+```
+
 ### Com relatório de cobertura
 
 ```powershell
@@ -347,6 +400,26 @@ pytest -k "valido"                                 # filtra por nome
 
 ---
 
+## Versão e publicação no GitHub
+
+A tag **`v1.0.0`** marca o **Release 1 — Core** do MVP: pipeline
+end-to-end (menu → coleta nas 4 fontes → dedupe → sumarização → PDF),
+com a suíte de testes em verde e documentação alinhada ao escopo.
+
+Após enviar o `main` atualizado para o remoto, crie e publique a tag:
+
+```bash
+git tag -a v1.0.0 -m "Release 1.0.0 — Core MVP (coleta fixa, PDF, testes)"
+git push origin main
+git push origin v1.0.0
+```
+
+No GitHub, em **Releases → Create a new release**, associe a tag
+`v1.0.0`, descreva as funcionalidades do R1 e anexe o PDF de exemplo se
+desejar.
+
+---
+
 ## Roadmap
 
 - [x] Bootstrap do projeto (`.gitignore`, `requirements.txt`,
@@ -355,7 +428,7 @@ pytest -k "valido"                                 # filtra por nome
 - [x] Definição da arquitetura e da estrutura de pastas (POM,
       services, genai, pdf, utils, tests)
 - [x] **Cliente LLM abstraído** + provider `stub` (default) e `openai`
-      opcional; embeddings/PDF a definir
+      opcional; PDF via `fpdf2`; embeddings no R2
 - [x] Implementação da `BasePage` real
 - [x] Helpers de comportamento humanizado (scroll, delays)
 - [x] Deduplicação por **URL + título** (similaridade semântica fica
@@ -422,4 +495,4 @@ Inteligência Artificial Generativa** — **UFG**.
 
 ---
 
-_Última atualização: 2026-04-30 (R1 — Core completo: pipeline end-to-end com geração de PDF via `fpdf2`, 164 testes / 79% cobertura)._
+_Última atualização: 2026-04-30 (tag **v1.0.0** — R1 Core; Makefile com `install` / `run` / `test`; 164 testes / 79% cobertura)._
