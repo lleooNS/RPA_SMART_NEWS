@@ -1,12 +1,14 @@
 """Orquestrador principal do RPA_SMART_NEWS.
 
-Pipeline (R1, sem PDF):
+Pipeline R1 (end-to-end):
     input (tema) → driver → coleta nas 4 fontes fixas →
-    dedupe (URL + título) → sumarização (LLM) → exibição do resumo.
+    dedupe (URL + título) → sumarização (LLM) → geração do PDF →
+    exibição do caminho absoluto do arquivo.
 """
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 from rich.console import Console
@@ -16,6 +18,7 @@ from src.genai.summarizer import summarize
 from src.models.news import NewsArticle
 from src.models.summary import Summary
 from src.models.user_input import UserInput
+from src.pdf.report import generate_pdf
 from src.services.menu import (
     MenuAbortedError,
     collect_user_input,
@@ -74,10 +77,16 @@ def run() -> int:
     if summary is None:
         return 4
     _print_summary(summary)
-    console.print(
-        "\n[dim]Próxima etapa: geração do PDF "
-        "(será implementada em B-013).[/]"
-    )
+
+    try:
+        pdf_path = generate_pdf(summary, settings=settings)
+    except Exception as exc:
+        logger.exception("Falha ao gerar o PDF")
+        console.print(f"\n[bold red]Falha ao gerar o PDF:[/] {exc}")
+        return 5
+
+    _print_pdf_path(pdf_path)
+    logger.info("Pipeline concluído | pdf=%s", pdf_path)
     return 0
 
 
@@ -147,5 +156,17 @@ def _print_summary(summary: Summary) -> None:
             body,
             title=f"Resumo — {summary.topic.name.title()}",
             border_style="cyan",
+        )
+    )
+
+
+def _print_pdf_path(pdf_path: Path) -> None:
+    """Exibe ao usuário o caminho absoluto do PDF gerado (B-014, RF15)."""
+    console.print(
+        Panel(
+            f"[bold green]PDF gerado com sucesso![/]\n\n"
+            f"[bold]Caminho:[/] {pdf_path}",
+            title="Relatório final",
+            border_style="green",
         )
     )
