@@ -33,23 +33,17 @@ def display_topics() -> None:
     console.print(table)
 
 
-def collect_user_input(max_retries: int = 3, max_days: int = 10) -> UserInput:
-    """Coleta e valida a entrada do usuário (tema + número de dias).
+def collect_user_input(max_retries: int = 3) -> UserInput:
+    """Coleta e valida a entrada do usuário (apenas o tema).
 
     Re-solicita em caso de input inválido, até `max_retries` tentativas.
     Levanta `MenuAbortedError` se o limite for atingido.
     """
     for attempt in range(1, max_retries + 1):
         topic_raw = console.input("[bold]Escolha um tema (1-10):[/] ").strip()
-        days_raw = console.input(
-            f"[bold]Quantos dias? (1-{max_days}):[/] "
-        ).strip()
 
         try:
-            user_input = UserInput(
-                topic=_parse_int(topic_raw, field="tema"),
-                days=_parse_int(days_raw, field="dias"),
-            )
+            user_input = UserInput(topic=_parse_int(topic_raw, field="tema"))
         except ValueError as exc:
             _warn(str(exc), attempt, max_retries)
             continue
