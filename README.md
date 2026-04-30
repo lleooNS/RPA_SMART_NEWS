@@ -85,8 +85,10 @@ trajetória é registrada em [`PROMPTS.md`](./PROMPTS.md).
 7. Sumarização consolidada via LLM (provedor abstraído; default `stub`
    offline; suporte opcional ao OpenAI).
 8. Agrupamento de notícias por similaridade temática *(R2)*.
-9. Exportação em **PDF** com capa, sumário executivo, agrupamentos e
-   fontes *(R1, item B-013 — pendente)*.
+9. **Exportação em PDF** (`output/<timestamp>_<tema>.pdf`) com tema,
+   metadados, resumo executivo, pontos-chave e lista de fontes com URL
+   clicável.
+10. Exibição do **caminho absoluto do PDF** no terminal ao final.
 
 ### Saídas
 - Arquivo **PDF** com o relatório final.
@@ -155,7 +157,7 @@ Objects específicos para cada um dos 4 sites de notícias.
 | Validação de inputs / modelos | **Pydantic v2** + `pydantic-settings` |
 | IA Generativa (LLM) | Interface `LLMClient` + `StubLLMClient` (default, offline) + `OpenAILLMClient` opcional |
 | Embeddings / Similaridade | _A definir no R2_ (sentence-transformers / API) |
-| Geração de PDF | _A definir no R1.B-013_ (ReportLab / fpdf2) |
+| Geração de PDF | **`fpdf2`** (`src/pdf/report.py` — capa textual, tema, resumo, bullets, fontes com URL clicável) |
 | Configuração | `pydantic-settings` + `.env` |
 | CLI / Logs | rich |
 | Testes | pytest + pytest-cov |
@@ -215,7 +217,9 @@ RPA_SMART_NEWS/
 │   │   │   └── openai_client.py     # opcional, lazy import
 │   │   ├── prompts.py
 │   │   └── summarizer.py
-│   └── pdf/                         # Geração do PDF (R1.B-013 — pendente)
+│   └── pdf/                         # Geração do PDF (fpdf2)
+│       └── report.py                # generate_pdf(summary) → caminho absoluto
+├── output/                          # PDFs gerados em runtime
 ├── tests/                           # Suíte pytest
 ├── .env.example                     # Variáveis de ambiente de exemplo
 ├── pyproject.toml                   # Config do pytest + coverage
@@ -296,10 +300,16 @@ Com o ambiente virtual ativado:
 python main.py
 ```
 
-> Estado atual: o `main.py` executa o pipeline **até a sumarização**:
+> Estado atual (R1 — Core completo): `main.py` executa o pipeline
+> **end-to-end**:
+>
 > input → driver → coleta nas 4 fontes fixas → dedupe URL+título →
-> sumarização. A geração do PDF (B-013) é o próximo passo para fechar
-> o R1.
+> sumarização (LLM) → **geração do PDF** → exibição do caminho
+> absoluto.
+>
+> O arquivo é salvo em `output/<YYYYMMDD_HHMMSS>_<tema>.pdf`. Caso já
+> exista (mesmo segundo + mesmo tema), `overwrite=False` adiciona
+> sufixo `_2`, `_3`, ... evitando perder a execução anterior.
 
 ---
 
@@ -350,15 +360,18 @@ pytest -k "valido"                                 # filtra por nome
 - [x] Helpers de comportamento humanizado (scroll, delays)
 - [x] Deduplicação por **URL + título** (similaridade semântica fica
       para o R2)
-- [ ] Validação determinística de input — **B-006 (reaberto: sem dias)**
-- [ ] Page Objects das 4 fontes fixas — **B-008**
-- [ ] Coleta orquestrada nas 4 fontes — **B-009**
-- [ ] Tolerância a falhas — **B-010**
-- [ ] Sumarização consolidada (sem `days`) — **B-012**
-- [ ] Geração do PDF (capa, sumário, seções, fontes) — **B-013**
-- [ ] Mensagem final com caminho do PDF — **B-014**
+- [x] Validação determinística de input (sem dias) — **B-006**
+- [x] Page Objects das 4 fontes fixas — **B-008**
+- [x] Coleta orquestrada nas 4 fontes — **B-009**
+- [x] Tolerância a falhas (1 site cai → demais seguem) — **B-010**
+- [x] Sumarização consolidada (sem `days`) — **B-012**
+- [x] Geração do PDF (`fpdf2`: tema, resumo, bullets, fontes) — **B-013**
+- [x] Mensagem final com caminho absoluto do PDF — **B-014**
+- [ ] Robustez ampliada (retry + screenshot/HTML em zero coletas) — R2
+- [ ] Deduplicação semântica via embeddings — R2
 - [ ] Agrupamento por similaridade (clustering) — R2
-- [ ] Sumarização por cluster — R2
+- [ ] Sumarização por cluster + resumo executivo final — R2
+- [ ] PDF apresentável (capa, sumário, paginação) — R3
 - [ ] Documentação final e demo — R3
 
 ---
@@ -409,4 +422,4 @@ Inteligência Artificial Generativa** — **UFG**.
 
 ---
 
-_Última atualização: 2026-04-30 (reset arquitetural — remove integração com Google e o input de "número de dias"; volta para coleta em 4 sites de confiança fixos com Page Objects dedicados)._
+_Última atualização: 2026-04-30 (R1 — Core completo: pipeline end-to-end com geração de PDF via `fpdf2`, 164 testes / 79% cobertura)._
