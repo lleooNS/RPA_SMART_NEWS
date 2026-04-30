@@ -103,6 +103,8 @@ Thumbs.db
 
 # ----- Cursor -----
 .cursor/
+# Contexto local para agentes Cursor (briefing de chats novos)
+CURSOR_CONTEXT.md
 
 # ----- SO -----
 desktop.ini
