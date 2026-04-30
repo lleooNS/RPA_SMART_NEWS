@@ -24,6 +24,9 @@ chromedriver-autoinstaller>=0.6.4
 # reportlab>=4.2.0
 # fpdf2>=2.7.0
 
+# ----- Validação de inputs / modelos de dados -----
+pydantic>=2.7.0
+
 # ----- Utilitários -----
 python-dotenv>=1.0.1
 rich>=13.7.0

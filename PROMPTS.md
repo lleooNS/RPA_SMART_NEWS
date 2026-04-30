@@ -24,6 +24,8 @@
 - [6. Documento de escopo do MVP](#6-documento-de-escopo-do-mvp)
 - [7. Backlog do projeto (R1/R2/R3)](#7-backlog-do-projeto-r1r2r3)
 - [8. Diagramas de arquitetura (Mermaid)](#8-diagramas-de-arquitetura-mermaid)
+- [9. Mudança no input do usuário — menu fixo de 10 temas](#9-mudança-no-input-do-usuário--menu-fixo-de-10-temas)
+- [10. Limite de N (1–10 dias) e adoção de Pydantic v2](#10-limite-de-n-110-dias-e-adoção-de-pydantic-v2)
 - [Backlog de prompts (planejado)](#backlog-de-prompts-planejado)
 
 ---
@@ -315,6 +317,153 @@
 
 ---
 
+## 9. Mudança no input do usuário — menu fixo de 10 temas
+
+| Campo | Valor |
+|---|---|
+| **Data** | 2026-04-30 |
+| **Etapa** | Refino de escopo / Design |
+| **Modelo/Ferramenta** | Cursor (Claude Opus 4.7) |
+
+### Prompt
+> "Gostaria de alterar a parte da entrada do usuário. Para este MVP o
+> RPA deve fornecer uma lista com os 10 assuntos de notícias mais
+> buscados. Assim o usuário apenas irá escolher o tema e fornecer o
+> número de dias que ele quer (ex.: últimas notícias dos 5 dias). Isso
+> vai evitar entradas indesejadas. Lista de assuntos: Economia,
+> Política, Esportes, Eventos globais, Saúde, Tecnologia,
+> Entretenimento, Clima, Crimes/Segurança, Cotidiano. Faça a alteração
+> desta parte no projeto e nos arquivos envolvidos."
+
+### Saída / Realizado
+
+**Decisão de design**: substituição do **input livre de tema + guardrail
+LLM** por um **menu fixo de 10 temas** + **número de dias N**, com
+**validação determinística**. A lista funciona como um *guardrail
+determinístico* de input, eliminando a necessidade de chamada a LLM
+nessa etapa.
+
+**Arquivos atualizados:**
+
+- `docs/escopo_mvp.md` (v0.2):
+  - Nova seção **3. Temas suportados** com a tabela dos 10 temas.
+  - Renumeração das demais seções (4 a 10 + sumário).
+  - **RF01** reescrito (menu numerado de 10 temas).
+  - **RF02** ajustado (número de dias N inteiro > 0).
+  - **RF03** reescrito (validação determinística, sem LLM).
+  - **RF04** reescrito (rejeição de input inválido + re-solicitação).
+  - **Seção 6.1** (GenAI no produto): removido "Validação de tema
+    (guardrail)"; adicionada nota sobre validação determinística.
+  - **Critério de aceite** item 2 atualizado.
+  - **Risco** "Tema ambíguo" reescrito como "Tema pré-definido amplo".
+  - Item 16 adicionado em "Fora de escopo": tema livre.
+  - Glossário de "Guardrail" complementado.
+
+- `docs/backlog.md` (v0.2):
+  - **B-004** reescrito: "CLI com menu de 10 temas + número de dias".
+  - **B-006** reescrito: "Validação determinística de input
+    (guardrail de menu)" — sem LLM.
+
+- `docs/arquitetura.md` (v0.2):
+  - **Diagrama de componentes**: nó `Theme Validator (Guardrail)`
+    substituído por `Theme Menu + Validator (determinístico)`;
+    aresta `VAL --> LLM` removida.
+  - **Diagrama de fluxo de dados**: decisão `Guardrail LLM`
+    substituída por `Validação determinística`; ramo de erro agora
+    re-solicita a entrada (loop), em vez de encerrar.
+
+- `README.md`:
+  - Visão geral atualizada (menu fixo + N dias).
+  - Bullet "Validação do tema (guardrail)" removido da lista de uso
+    da GenAI no fluxo.
+  - Seção **Funcionalidades > Entradas** lista os 10 temas e o
+    número de dias.
+  - Seção **Funcionalidades > Fluxo** atualizada.
+  - **Diagrama ASCII** atualizado para refletir o menu determinístico.
+  - Adicionada referência a `docs/arquitetura.md`.
+
+- `PROMPTS.md` *(este registro)*.
+
+### Artefatos
+- `RPA_SMART_NEWS/docs/escopo_mvp.md` *(v0.2)*
+- `RPA_SMART_NEWS/docs/backlog.md` *(v0.2)*
+- `RPA_SMART_NEWS/docs/arquitetura.md` *(v0.2)*
+- `RPA_SMART_NEWS/README.md` *(atualizado)*
+- `RPA_SMART_NEWS/PROMPTS.md` *(atualizado)*
+
+---
+
+## 10. Limite de N (1–10 dias) e adoção de Pydantic v2
+
+| Campo | Valor |
+|---|---|
+| **Data** | 2026-04-30 |
+| **Etapa** | Refino de escopo / Decisão técnica |
+| **Modelo/Ferramenta** | Cursor (Claude Opus 4.7) |
+
+### Prompt
+> "Preciso limitar também o número de dias. No máximo notícias dos
+> últimos 10 dias. Nesta primeira versão, ficará limitado para não
+> trazer muitas informações e prejudicar a performance.
+> Como informação, vamos usar o Pydantic v2, com código limpo e
+> docstrings curtas, caso seja necessário."
+
+### Saída / Realizado
+
+**Decisões aplicadas:**
+1. **Limite de dias**: `1 ≤ N ≤ 10` para evitar volume excessivo de
+   notícias e preservar a performance do MVP.
+2. **Validação via Pydantic v2** — modelo `UserInput` (e demais
+   modelos de configuração) usarão Pydantic v2 com validadores nativos.
+3. **Convenção de código**: código limpo, type hints e **docstrings
+   curtas e objetivas** (sem ruído narrativo).
+
+**Arquivos atualizados:**
+
+- `requirements.txt`: adicionada dependência `pydantic>=2.7.0` em uma
+  nova seção *"Validação de inputs / modelos de dados"*.
+
+- `docs/escopo_mvp.md` (v0.3):
+  - Seção 3 (Temas suportados): nota explícita do limite de 10 dias.
+  - **RF02** atualizado para `1 ≤ N ≤ 10`.
+  - **RF03** menciona uso de **modelos Pydantic v2**.
+  - **RF04** atualizado para "fora do intervalo `1–10`".
+  - **RNF17** reforçado (código limpo + docstrings curtas).
+  - Novo **RNF19**: Pydantic v2 como tecnologia de validação.
+  - Critério de aceite #2 ajustado para o intervalo `1–10`.
+
+- `docs/backlog.md` (v0.3):
+  - Novo **RT11**: modelos Pydantic v2 para inputs e configuração.
+  - **B-004** referencia `RT11` e fixa `1 ≤ N ≤ 10`.
+  - **B-006** referencia `RT11` e detalha o modelo `UserInput`
+    (`tema_id: int`, `dias: int`) com mapeamento de
+    `ValidationError` → mensagem amigável.
+
+- `docs/arquitetura.md` (v0.3):
+  - Componentes: label do nó passou a `Theme Menu + Validator
+    (Pydantic v2 — 10 temas + 1–10 dias)`.
+  - Fluxo de dados: nó de validação passou a `Validação (Pydantic v2)`
+    e o rótulo da aresta de input passou a `seleção 1–10 + N (1–10)`.
+
+- `README.md`:
+  - **Funcionalidades > Entradas**: limite `1 ≤ N ≤ 10` documentado
+    com nota sobre a restrição desta versão.
+  - **Stack tecnológica**: linha de **Pydantic v2** adicionada.
+  - Nota de **convenção de código** (limpo, type hints, docstrings
+    curtas) incluída logo abaixo da tabela de stack.
+
+- `PROMPTS.md` *(este registro)*.
+
+### Artefatos
+- `RPA_SMART_NEWS/requirements.txt` *(atualizado)*
+- `RPA_SMART_NEWS/docs/escopo_mvp.md` *(v0.3)*
+- `RPA_SMART_NEWS/docs/backlog.md` *(v0.3)*
+- `RPA_SMART_NEWS/docs/arquitetura.md` *(v0.3)*
+- `RPA_SMART_NEWS/README.md` *(atualizado)*
+- `RPA_SMART_NEWS/PROMPTS.md` *(atualizado)*
+
+---
+
 ## Backlog de prompts (planejado)
 
 > Lista de prompts previstos para as próximas etapas. Será movida para
@@ -343,4 +492,4 @@
 
 ---
 
-_Última atualização: 2026-04-30 (diagramas de arquitetura)_
+_Última atualização: 2026-04-30 (limite de N=1–10 dias + adoção de Pydantic v2)_

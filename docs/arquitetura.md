@@ -32,7 +32,7 @@ flowchart TB
 
     subgraph SVC["Serviços / Orquestração"]
         ORCH["Orchestrator"]
-        VAL["Theme Validator<br/>(Guardrail)"]
+        MENU["Theme Menu + Validator<br/>(Pydantic v2 — 10 temas + 1–10 dias)"]
         COLL["News Collector"]
         FILT["Date Filter"]
         DEDUP["Deduplicator<br/>(URL + título + semântica)"]
@@ -63,15 +63,13 @@ flowchart TB
     MAIN --> LOG
     MAIN --> ORCH
 
-    ORCH --> VAL
+    ORCH --> MENU
     ORCH --> COLL
     ORCH --> FILT
     ORCH --> DEDUP
     ORCH --> CLUS
     ORCH --> SUMM
     ORCH --> PDF
-
-    VAL --> LLM
 
     COLL --> DRV
     DRV --> BP
@@ -99,11 +97,12 @@ usuário até a entrega do PDF.
 
 ```mermaid
 flowchart LR
-    U([Usuário]) -->|tema + intervalo| CLI["CLI<br/>(main.py)"]
-    CLI -->|parâmetros validados| VG{Guardrail<br/>LLM}
-    VG -->|restrito| ERR["Mensagem amigável<br/>+ encerra"]
-    VG -->|permitido| WEB["Coleta Web<br/>(3 sites — POM)"]
-    WEB -->|notícias brutas| FD["Filtro<br/>por intervalo de datas"]
+    U([Usuário]) -->|escolha do menu + N dias| CLI["CLI<br/>(main.py)"]
+    CLI -->|seleção 1–10 + N (1–10)| VG{"Validação<br/>(Pydantic v2)"}
+    VG -->|inválido| ERR["Mensagem amigável<br/>+ re-solicita input"]
+    ERR -.->|nova tentativa| CLI
+    VG -->|válido| WEB["Coleta Web<br/>(3 sites — POM)"]
+    WEB -->|notícias brutas| FD["Filtro<br/>por últimos N dias"]
     FD -->|notícias filtradas| DD1["Dedupe<br/>URL + título"]
     DD1 -->|notícias únicas| DD2["Dedupe semântica<br/>(embeddings)"]
     DD2 -->|notícias deduplicadas| CL["Clustering<br/>+ nomeação (LLM)"]
@@ -134,3 +133,5 @@ flowchart LR
 | Versão | Data | Autor | Descrição |
 |---|---|---|---|
 | 0.1 | 2026-04-30 | Leonardo Santos | Versão inicial: componentes e fluxo de dados. |
+| 0.2 | 2026-04-30 | Leonardo Santos | Substitui guardrail LLM por **menu determinístico** (10 temas + N dias) nos dois diagramas. |
+| 0.3 | 2026-04-30 | Leonardo Santos | Inclui **Pydantic v2** nos labels de validação e o limite **1–10 dias**. |

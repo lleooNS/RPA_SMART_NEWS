@@ -51,6 +51,7 @@ RFs do escopo, mas necessários para a entrega.
 | **RT08** | Integração com biblioteca de geração de PDF. |
 | **RT09** | Tipagem (`type hints`) e linter (`ruff`) — opcional. |
 | **RT10** | Conventional Commits e branch protection local. |
+| **RT11** | Modelos **Pydantic v2** para validação de inputs do usuário e configuração (`.env`). |
 
 ---
 
@@ -75,20 +76,24 @@ RFs do escopo, mas necessários para a entrega.
   - [ ] Níveis INFO/WARNING/ERROR habilitados
   - [ ] Timestamps em cada linha de log
 
-- [ ] **B-004** `[RF01, RF02]` — CLI para captura de tema e intervalo
-  - [ ] CLI aceita `--tema "<texto>"` e `--dias N` (ou `--de/--ate`)
-  - [ ] Validação dos parâmetros (não vazio, intervalo válido)
-  - [ ] Exibe os parâmetros recebidos antes de iniciar
+- [ ] **B-004** `[RF01, RF02, RT11]` — CLI com menu de 10 temas + número de dias
+  - [ ] Exibe **menu numerado (1–10)** com os temas pré-definidos (ver `docs/escopo_mvp.md` §3)
+  - [ ] Aceita seleção do usuário (entrada `1` a `10`)
+  - [ ] Aceita número de dias `N` (inteiro **`1 ≤ N ≤ 10`**)
+  - [ ] Exibe a seleção confirmada (tema + N dias) antes de iniciar
 
 - [ ] **B-005** `[RT06]` — Cliente LLM abstraído
   - [ ] Interface `LLMClient` em `src/genai/llm_client.py`
   - [ ] Pelo menos uma implementação concreta funcional
   - [ ] API key carregada do `.env`
 
-- [ ] **B-006** `[RF03, RF04]` — Guardrail de validação de tema (versão simples)
-  - [ ] Prompt classifica tema em `permitido` / `restrito`
-  - [ ] Tema restrito: exibe mensagem amigável e encerra com código != 0
-  - [ ] Tema permitido: prossegue para a coleta
+- [ ] **B-006** `[RF03, RF04, RT11]` — Validação determinística de input (guardrail de menu)
+  - [ ] Modelo **Pydantic v2** (`UserInput`) com campos `tema_id: int` e `dias: int`
+  - [ ] Validação da seleção (somente valores `1–10` aceitos)
+  - [ ] Validação do número de dias (`1 ≤ N ≤ 10`)
+  - [ ] Mensagens de erro amigáveis em pt-BR (mapeando `ValidationError` → texto)
+  - [ ] **Re-solicita** a entrada em caso de input inválido (com limite de tentativas)
+  - [ ] **Sem chamada a LLM** — validação puramente determinística
 
 - [ ] **B-007** `[RT05, RF05]` — Camada base do Selenium (driver factory)
   - [ ] `src/pages/base_page.py` com `BasePage`
@@ -252,3 +257,5 @@ Para qualquer item ser considerado **concluído (`[x]`)**, deve atender:
 | Versão | Data | Autor | Descrição |
 |---|---|---|---|
 | 0.1 | 2026-04-30 | Leonardo Santos | Versão inicial do backlog (R1, R2, R3). |
+| 0.2 | 2026-04-30 | Leonardo Santos | Atualiza B-004 (menu de 10 temas + N dias) e B-006 (validação determinística no lugar do guardrail LLM). |
+| 0.3 | 2026-04-30 | Leonardo Santos | Adiciona **RT11 (Pydantic v2)**; limita N a `1–10` em B-004; reforça B-006 com modelo Pydantic. |

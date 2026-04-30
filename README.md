@@ -33,19 +33,23 @@ Inteligência Artificial Generativa** — **UFG**.
 ## Visão geral
 
 O **RPA_SMART_NEWS** é um robô (RPA) que automatiza a pesquisa de
-notícias sobre um tema informado pelo usuário, em um intervalo de
-datas, executando o navegador de forma **visível** (simulando um
-humano, com scroll e esperas naturais). Ao final, entrega um **PDF**
-com um resumo consolidado, agrupado por assuntos semelhantes e livre de
-duplicatas.
+notícias sobre um **tema escolhido pelo usuário a partir de uma lista
+fixa de 10 assuntos**, considerando os **últimos N dias**, executando o
+navegador de forma **visível** (simulando um humano, com scroll e
+esperas naturais). Ao final, entrega um **PDF** com um resumo
+consolidado, agrupado por assuntos semelhantes e livre de duplicatas.
 
 A IA Generativa é aplicada em **múltiplos estágios** do fluxo:
 
-- **Validação do tema** (guardrail contra temas restritos/sensíveis).
-- **Classificação de relevância** das notícias coletadas.
+- **Classificação de relevância** das notícias coletadas frente ao
+  tema escolhido.
 - **Deduplicação semântica** (além de URL/título).
 - **Agrupamento de assuntos** semelhantes (clustering).
 - **Sumarização consolidada** por cluster e do resumo executivo final.
+
+> A **validação do input** é **determinística** (menu fixo de 10
+> temas + número de dias), funcionando como um *guardrail* simples e
+> previsível, sem custo de chamada a LLM.
 
 O projeto também explora o uso de GenAI em diferentes etapas do **ciclo
 de vida do desenvolvimento de software**: concepção, codificação
@@ -57,19 +61,24 @@ trajetória é registrada em [`PROMPTS.md`](./PROMPTS.md).
 ## Funcionalidades
 
 ### Entradas
-- Tema/assunto de interesse.
-- Intervalo de datas (ex.: últimos 5 dias).
+- **Tema** selecionado de uma **lista fixa de 10 assuntos** (1–10):
+  Economia, Política, Esportes, Eventos globais, Saúde, Tecnologia,
+  Entretenimento, Clima, Crimes/Segurança, Cotidiano.
+- **Número de dias N** — inteiro com **1 ≤ N ≤ 10** (últimos N dias).
+  > Limite máximo de 10 dias **nesta primeira versão**, para evitar
+  > volume excessivo de notícias e preservar a performance do MVP.
 
 ### Fluxo
-1. Validação prévia do tema (rejeita conteúdos restritos com mensagem
-   amigável solicitando outro tema).
-2. Abertura visível do navegador (modo não-headless).
-3. Coleta em **3 sites confiáveis** de notícias.
-4. Scroll e esperas humanizadas para simular um usuário real.
-5. Deduplicação (URL → título → similaridade semântica).
-6. Agrupamento de notícias por similaridade temática.
-7. Sumarização consolidada via LLM.
-8. Exportação em **PDF** com capa, sumário executivo, agrupamentos e
+1. Exibição do **menu de 10 temas** + leitura do número de dias N.
+2. **Validação determinística** dos inputs (re-solicita em caso de
+   entrada inválida).
+3. Abertura visível do navegador (modo não-headless).
+4. Coleta em **3 sites confiáveis** de notícias.
+5. Scroll e esperas humanizadas para simular um usuário real.
+6. Deduplicação (URL → título → similaridade semântica).
+7. Agrupamento de notícias por similaridade temática.
+8. Sumarização consolidada via LLM.
+9. Exportação em **PDF** com capa, sumário executivo, agrupamentos e
    fontes.
 
 ### Saídas
@@ -85,11 +94,11 @@ trajetória é registrada em [`PROMPTS.md`](./PROMPTS.md).
 
 ```text
 ┌─────────────┐   ┌──────────────┐   ┌──────────────┐   ┌──────────────┐
-│   Usuário   │──▶│  Validação   │──▶│   Coleta     │──▶│   Pipeline   │
-│ (tema+data) │   │  do tema     │   │  (Selenium   │   │  GenAI       │
-│             │   │  (LLM)       │   │   + POM)     │   │  (dedupe,    │
-│             │   │              │   │              │   │   cluster,   │
-│             │   │              │   │              │   │   resumo)    │
+│   Usuário   │──▶│  Menu fixo   │──▶│   Coleta     │──▶│   Pipeline   │
+│ (escolha    │   │  (10 temas)  │   │  (Selenium   │   │  GenAI       │
+│  + N dias)  │   │ + validação  │   │   + POM)     │   │  (dedupe,    │
+│             │   │ determinís-  │   │              │   │   cluster,   │
+│             │   │ tica         │   │              │   │   resumo)    │
 └─────────────┘   └──────────────┘   └──────────────┘   └──────┬───────┘
                                                                │
                                                                ▼
@@ -98,6 +107,9 @@ trajetória é registrada em [`PROMPTS.md`](./PROMPTS.md).
                                                        │   (output/)   │
                                                        └───────────────┘
 ```
+
+> Para diagramas detalhados (componentes e fluxo de dados em
+> Mermaid), ver [`docs/arquitetura.md`](./docs/arquitetura.md).
 
 A automação web segue o padrão **Page Object Model (POM)**, com uma
 `BasePage` reaproveitável e Page Objects específicos para cada site
@@ -112,12 +124,16 @@ de notícias.
 | Linguagem | Python **3.11+** |
 | Automação Web | Selenium 4 + webdriver-manager |
 | Padrão de design (web) | Page Object Model (POM) |
+| Validação de inputs / modelos | **Pydantic v2** |
 | IA Generativa (LLM) | _A definir_ (OpenAI / Anthropic / Gemini / Ollama) |
 | Embeddings / Similaridade | _A definir_ (sentence-transformers / API) |
 | Geração de PDF | _A definir_ (ReportLab / fpdf2) |
 | Configuração | python-dotenv |
 | CLI / Logs | rich |
 | Testes | pytest + pytest-cov |
+
+> Convenção de código: **código limpo**, type hints e **docstrings
+> curtas e objetivas** (sem ruído).
 
 > Itens marcados como _a definir_ estão como **placeholders comentados**
 > em `requirements.txt` e serão fixados conforme as decisões do
