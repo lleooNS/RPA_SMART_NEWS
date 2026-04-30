@@ -29,6 +29,9 @@
 - [11. Briefing local para agentes (CURSOR_CONTEXT.md)](#11-briefing-local-para-agentes-cursor_contextmd)
 - [12. Início da implementação — estrutura, config, logger, menu e validação](#12-início-da-implementação--estrutura-config-logger-menu-e-validação)
 - [13. Suíte de testes (pytest) para os módulos de R1](#13-suíte-de-testes-pytest-para-os-módulos-de-r1)
+- [14. Implementação do navegador até a sumarização (POM + LLM stub)](#14-implementação-do-navegador-até-a-sumarização-pom--llm-stub)
+- [15. Discovery dinâmico via Google + coleta dia-a-dia](#15-discovery-dinâmico-via-google--coleta-dia-a-dia)
+- [16. Reset arquitetural — remove Google e o input de "número de dias"](#16-reset-arquitetural--remove-google-e-o-input-de-número-de-dias)
 - [Backlog de prompts (planejado)](#backlog-de-prompts-planejado)
 
 ---
@@ -694,6 +697,442 @@ TOTAL coverage: 75% (limite RNF11: 60%)
 
 ---
 
+## 14. Implementação do navegador até a sumarização (POM + LLM stub)
+
+| Campo | Valor |
+|---|---|
+| **Data** | 2026-04-30 |
+| **Etapa** | Implementação (R1, segunda iteração) |
+| **Modelo/Ferramenta** | Cursor (Claude Opus 4.7) |
+
+### Prompt
+> "Agora chegou a parte mais importante do projeto. Você vai implementar
+> o código desde a abertura do navegador, até a parte antes da geração
+> do pdf. Lembre de utilizar o POM, com Locators, Pages e Steps. Para
+> buscar as notícias, busque somente de sites confiáveis, mais
+> populares. Evite sites que bloqueiam scraping e pedem senhas."
+
+### Saída / Realizado
+
+#### Decisões aplicadas
+1. **3 sites finais (RF07)**: G1, BBC News Brasil, Agência Brasil —
+   sem paywall, sem login obrigatório, com editorias por tema.
+2. **Estratégia de busca**: navegação direta para a editoria/seção
+   correspondente ao tema (mais robusta que busca interna, evita
+   captcha/rate-limit).
+3. **Cliente LLM abstraído** (`Protocol`) com:
+   - `StubLLMClient` (default, offline, determinístico — funciona sem
+     API key, ideal para CI e dev).
+   - `OpenAILLMClient` opcional, com **lazy import** do pacote
+     `openai` (não vira dependência obrigatória).
+   - `factory.get_llm_client()` resolve o provider via `LLM_PROVIDER`.
+4. **Sem novas dependências**: parsing de datas próprio (ISO + pt-BR
+   longo + `dd/mm/aaaa` + relativo).
+5. **Tolerância a falhas por site** no `coleta_step`: exceção em um
+   site não interrompe os outros (atende RF15 + B-102).
+
+#### Backlog atualizado (v0.7)
+- **B-005, B-007, B-008, B-009, B-010, B-011, B-012** marcados como
+  concluídos.
+- **B-101, B-102, B-103** do R2 marcados como adiantados (parcial).
+
+#### Documentos atualizados
+- `docs/escopo_mvp.md` (v0.5): RF07 fixa os 3 sites finais.
+- `docs/backlog.md` (v0.7): itens R1 e R2 (parciais) marcados.
+- `README.md`: stack, fluxo, sites, configuração, estrutura, testes
+  e roadmap atualizados.
+- `CURSOR_CONTEXT.md` (v0.4): nova estrutura, decisões e estado atual.
+- `.env.example`: novas variáveis (HEADLESS, delays, MAX_NEWS_PER_SITE,
+  SELENIUM_TIMEOUT, LLM_PROVIDER, LLM_MODEL, LLM_API_KEY,
+  LLM_TEMPERATURE, LLM_MAX_TOKENS, USER_AGENT).
+
+#### Código implementado
+
+| Arquivo | Responsabilidade |
+|---|---|
+| `src/utils/config.py` | Novas settings: headless, delays, max_news, selenium_timeout, llm_*. |
+| `src/utils/driver_factory.py` | `create_driver()` / `quit_driver()` com `chromedriver-autoinstaller`. |
+| `src/utils/humanize.py` | `random_delay`, `smooth_scroll`, `scroll_to_top`. |
+| `src/utils/date_filter.py` | `parse_date` (ISO/pt-BR/relativo) + `filter_recent`. |
+| `src/utils/dedupe.py` | `normalize_url` + `normalize_title` + `dedupe`. |
+| `src/pages/base_page.py` | `BasePage` real: waits, finds, scroll humanizado, click tolerante. |
+| `src/locators/g1_locators.py` | Mapeamento Topic → editoria + seletores. |
+| `src/locators/bbc_locators.py` | Idem (com fallback para a home em temas sem seção). |
+| `src/locators/agencia_brasil_locators.py` | Idem. |
+| `src/pages/g1_page.py` | `G1Page.collect(topic, max_items) -> list[NewsArticle]`. |
+| `src/pages/bbc_page.py` | `BBCPage.collect(...)`. |
+| `src/pages/agencia_brasil_page.py` | `AgenciaBrasilPage.collect(...)`. |
+| `src/steps/coleta_step.py` | `coletar_noticias(driver, topic)` orquestra os 3 sites. |
+| `src/models/news.py` | `NewsArticle` Pydantic v2 frozen. |
+| `src/models/summary.py` | `Summary` + `SourceRef` Pydantic v2 frozen. |
+| `src/genai/llm_client.py` | `Protocol LLMClient` (interface mínima). |
+| `src/genai/factory.py` | `get_llm_client()` resolve provider via `.env`. |
+| `src/genai/llm_clients/stub.py` | `StubLLMClient` offline determinístico. |
+| `src/genai/llm_clients/openai_client.py` | Adapter OpenAI com lazy import. |
+| `src/genai/prompts.py` | `SUMMARY_SYSTEM_PROMPT` + `build_summary_prompt`. |
+| `src/genai/summarizer.py` | `summarize(...) -> Summary`. |
+| `src/services/orchestrator.py` | Pipeline: input → driver → coleta → filtro → dedupe → sumarização → exibição (sem PDF). |
+
+#### Suíte de testes
+- **160 testes** passando (era 73).
+- **Cobertura: 61%** (acima do mínimo RNF11 = 60%).
+- Novos testes: `test_news`, `test_summary`, `test_humanize`,
+  `test_date_filter`, `test_dedupe`, `test_llm_clients`,
+  `test_summarizer`, `test_locators`, `test_coleta_step`.
+- `test_base_page` reescrito para a `BasePage` real (driver mock).
+
+### Artefatos
+- `src/utils/{config,driver_factory,humanize,date_filter,dedupe}.py`
+- `src/pages/{base_page,g1_page,bbc_page,agencia_brasil_page}.py`
+- `src/locators/{g1,bbc,agencia_brasil}_locators.py`
+- `src/steps/coleta_step.py`
+- `src/models/{news,summary}.py`
+- `src/genai/{llm_client,factory,prompts,summarizer}.py`
+- `src/genai/llm_clients/{stub,openai_client}.py`
+- `src/services/orchestrator.py` *(reescrito)*
+- `tests/test_{base_page,news,summary,humanize,date_filter,dedupe,llm_clients,summarizer,locators,coleta_step}.py`
+- `.env.example` *(atualizado)*
+- `docs/escopo_mvp.md` *(v0.5)*
+- `docs/backlog.md` *(v0.7)*
+- `README.md` *(atualizado)*
+- `CURSOR_CONTEXT.md` *(v0.4)*
+- `PROMPTS.md` *(este registro)*
+
+---
+
+## 15. Discovery dinâmico via Google + coleta dia-a-dia
+
+| Campo | Valor |
+|---|---|
+| **Data** | 2026-04-30 |
+| **Etapa** | Refino de design / Reescrita arquitetural (R1) |
+| **Modelo/Ferramenta** | Cursor (Claude Opus 4.7) |
+
+### Prompt
+> "Você deve pesquisar o tema no google primeiro. Após isso, você vai
+> encontrar os sites mais confiáveis de notícia. Com relação aos dias,
+> você deve procurar de acordo com as datas em cada site. Se o usuário
+> passar o número = 2, você deve acessar o primeiro site procurando
+> sobre o tema na data de hoje, depois na data de ontem e depois na
+> data antes de ontem. Assim por diante. Só depois você passa para o
+> outro site. Não precisa ser sites fixos. Mas os mais confiáveis de
+> acordo com o tema da notícia."
+
+### Saída / Realizado
+
+#### Decisões aplicadas
+
+1. **Discovery dinâmico via Google**: substitui a lista fixa
+   (G1/BBC/Agência Brasil) por uma seleção via Google Search aba
+   "Notícias". A lista de sites varia por tema.
+2. **Coleta dia-a-dia**: para cada site descoberto, varre os últimos
+   N dias **um a um** (`hoje`, `ontem`, `anteontem`, ...). Usa
+   `site:dominio` + `tbs=cdr:1,cd_min:DD/MM/YYYY,cd_max:DD/MM/YYYY`.
+3. **Sem whitelist de sites**: confiamos no ranking do Google. Apenas
+   um *blacklist* leve descarta domínios não-jornalísticos (Wikipedia,
+   YouTube, redes sociais, lojas, buscadores).
+4. **Semântica de N**: `N=k → últimos k dias incluindo hoje` (N=1 →
+   só hoje; N=2 → hoje + ontem; N=3 → hoje + ontem + anteontem).
+5. **Detecção de captcha**: o `GoogleSearchPage` detecta o bloqueio
+   (`form#captcha-form`, `div#sorry`, etc.) — discovery falho devolve
+   lista vazia e o orquestrador aborta com mensagem amigável; coletas
+   bloqueadas em pares `(site, dia)` são puladas com log.
+6. **Limpeza**: removidos `g1_locators`, `bbc_locators`,
+   `agencia_brasil_locators`, e respectivas `*_page.py` e o
+   `tests/test_locators.py`.
+
+#### Backlog atualizado (v0.8)
+- **B-008** reescrito: discovery via Google.
+- **B-009** reescrito: coleta dia-a-dia por site.
+- **B-010** reescrito: tolerância a falhas + detecção de captcha.
+- **B-011** ajustado: filtro de datas vira utilitário (Google já
+  filtra na origem).
+
+#### Documentos atualizados
+- `docs/escopo_mvp.md` (v0.6): RF07/RF08 reescritos.
+- `docs/backlog.md` (v0.8): itens R1 reescritos.
+- `README.md`: fluxo, estrutura, configuração, testes e roadmap
+  refletindo a nova arquitetura.
+- `CURSOR_CONTEXT.md` (v0.5): pipeline, decisões, estrutura.
+- `.env.example`: novas variáveis (`DISCOVERY_MAX_SOURCES`,
+  `DISCOVERY_RESULTS_TO_SCAN`, `GOOGLE_LOCALE`, `GOOGLE_COUNTRY`).
+
+#### Código implementado / removido
+
+**Removido**:
+- `src/locators/{g1,bbc,agencia_brasil}_locators.py`
+- `src/pages/{g1,bbc,agencia_brasil}_page.py`
+- `tests/test_locators.py`
+
+**Criado / atualizado**:
+
+| Arquivo | Responsabilidade |
+|---|---|
+| `src/utils/dates.py` | `today_local`, `iter_recent_dates(N)`, `format_brazilian_date`. |
+| `src/utils/domains.py` | `extract_domain`, `root_domain`, `is_news_domain`, `rank_domains`, blacklist. |
+| `src/utils/config.py` | Novas settings `discovery_max_sources`, `discovery_results_to_scan`, `google_locale`, `google_country`. |
+| `src/locators/google_locators.py` | Seletores fallback + `discovery_url` + `site_day_url` + `CAPTCHA_INDICATORS`. |
+| `src/pages/google_search_page.py` | `discover_top_sources` + `search_in_site_for_day` + `_is_blocked`. |
+| `src/steps/discovery_step.py` | `descobrir_fontes(driver, topic) -> list[str]`. |
+| `src/steps/coleta_step.py` | Reescrito: itera `(site × dia)` com tolerância a falhas. |
+| `src/services/orchestrator.py` | Pipeline: input → discovery → coleta dia-a-dia → dedupe → sumarização. |
+
+**Novos testes**:
+- `tests/test_dates.py`, `tests/test_domains.py`,
+  `tests/test_google_locators.py`, `tests/test_google_search_page.py`,
+  `tests/test_discovery_step.py` e `tests/test_coleta_step.py`
+  reescrito.
+
+#### Suíte de testes
+- **160 testes** passando.
+- **Cobertura: 73%** (subiu de 61% — pages fixas removidas tinham
+  cobertura baixa).
+
+#### Risco conhecido
+O **Google é hostil a scraping** e pode mostrar captcha rapidamente
+em execuções com muitos pares `(site × dia)`. Mitigações já
+implementadas:
+- delays randomizados entre ações (`HUMANIZE_DELAY_MIN/MAX`),
+- user-agent realista,
+- detecção do captcha → log warning + skip + aborto controlado.
+
+Em uma execução real, recomenda-se manter `MAX_DAYS` baixo nos
+primeiros testes (e.g. 1–3) para validar o fluxo antes de subir o
+volume de requests.
+
+### Artefatos
+- `src/utils/{dates,domains}.py`
+- `src/locators/google_locators.py`
+- `src/pages/google_search_page.py`
+- `src/steps/{discovery,coleta}_step.py`
+- `src/services/orchestrator.py` *(reescrito)*
+- `src/utils/config.py` *(novas settings)*
+- `.env.example` *(atualizado)*
+- `tests/test_{dates,domains,google_locators,google_search_page,discovery_step,coleta_step}.py`
+- `docs/escopo_mvp.md` *(v0.6)*
+- `docs/backlog.md` *(v0.8)*
+- `README.md` *(atualizado)*
+- `CURSOR_CONTEXT.md` *(v0.5)*
+- `PROMPTS.md` *(este registro)*
+
+---
+
+## 16. Opção E — Site Adapters via `news.google.com`
+
+| Campo | Valor |
+|---|---|
+| **Data** | 2026-04-30 |
+| **Etapa** | Refatoração arquitetural (R1) |
+| **Modelo/Ferramenta** | Cursor (Claude Opus 4.7) |
+
+### Prompt
+> "A última parte implementada não funcionou. Nenhuma pesquisa
+> funcionou, a abordagem não deu certo. Erro: A pesquisa não
+> corresponde ao resultado de busca. (...) Apenas conserte. Use o
+> arquivo backlog.md e escopo_mvp.md, você estava implementando desde
+> a abertura do navegador, até antes da criação do arquivo pdf."
+
+### Diagnóstico
+A estratégia anterior (`§15`) usava `q=<tema> site:<dominio>` +
+`tbs=cdr:1,cd_min:DD/MM/YYYY,cd_max:DD/MM/YYYY` no Google Web. A
+tripla restrição (tema ∧ site ∧ janela de 1 dia) é estatisticamente
+esparsa no índice e retornava "Sua pesquisa não corresponde a nenhum
+documento" para a maioria dos pares `(site × dia)`. Pipeline ficava
+com lista vazia desde a coleta.
+
+### Decisões aplicadas (Opção E)
+
+1. **Discovery via `news.google.com`** (1 query única por execução)
+   substitui o `tbm=nws` do Google Web.
+2. **Coleta via `SiteAdapter`** (Protocol) + `Adapter Registry`. No
+   R1 só há o `GenericNewsAdapter`, que consulta o Google News com
+   `site:<dominio>` (sem `tbs`).
+3. **Janela de N dias aplicada localmente** sobre `published_at`
+   (extraído do `<time datetime="...">` de cada card). A UX
+   "site → hoje → ontem → anteontem" é preservada nos logs via
+   agregação local.
+4. **Resolver de redirect** (`./articles/<token>` → URL canônica) via
+   nova aba do Selenium, controlado por `RESOLVE_ARTICLE_URLS`.
+5. **Falha tolerante**: `AdapterError` é capturada pelo
+   `coleta_step` — falha em um adapter não interrompe os demais.
+
+### Código implementado / removido
+
+**Removido**:
+- `src/locators/google_locators.py`
+- `src/pages/google_search_page.py`
+- `tests/test_google_locators.py`
+- `tests/test_google_search_page.py`
+
+**Criado**:
+| Arquivo | Responsabilidade |
+|---|---|
+| `src/locators/google_news_locators.py` | URLs (`discovery_url`, `site_search_url`) + locators (cards, links, `<time>`, captcha, consentimento). |
+| `src/pages/google_news_page.py` | `GoogleNewsPage.discover_top_sources` + `search_in_site` + resolver de redirect. |
+| `src/adapters/__init__.py` | Re-exports do contrato. |
+| `src/adapters/base.py` | `SiteAdapter` (Protocol) + `AdapterError`. |
+| `src/adapters/registry.py` | `get_adapter`, `register_adapter`, `clear_registry`. |
+| `src/adapters/generic.py` | `GenericNewsAdapter` (R1). |
+| `tests/test_google_news_locators.py` | URLs sem `tbs`, com `site:`, encoding correto. |
+| `tests/test_google_news_page.py` | Discovery e coleta com `WebDriver` mockado. |
+| `tests/test_adapters.py` | Contrato, registry, filtragem por janela, max_items, erro propagado. |
+
+**Atualizado**:
+| Arquivo | Mudança |
+|---|---|
+| `src/utils/config.py` | +`google_news_base_url`, +`google_news_ceid`, +`generic_adapter_results_to_scan`, +`resolve_article_urls`. |
+| `src/steps/discovery_step.py` | Usa `GoogleNewsPage`. |
+| `src/steps/coleta_step.py` | Delega ao `get_adapter(domain)` e loga quebra dia-a-dia local. |
+| `tests/test_coleta_step.py` | Reescrito mockando o registry. |
+| `tests/test_discovery_step.py` | Apontado para `GoogleNewsPage`. |
+| `.env.example` | Novas vars + remoção implícita do `tbs`. |
+
+### Documentos atualizados
+- `docs/escopo_mvp.md` (v0.7): RF07/RF08 reescritos para Site Adapters.
+- `docs/backlog.md` (v0.9): B-008..B-011 reabertos e marcados como
+  concluídos com nova descrição.
+- `docs/arquitetura.md` (v0.5): diagramas trocam `Site 1/2/3` por
+  `GoogleNewsPage` + `Adapter Registry` + `GenericNewsAdapter` +
+  (futuros) curados; fluxo de dados passa a ter "Filtro local por
+  últimos N dias (published_at)".
+- `README.md`: fluxo, estrutura, tabela de env vars, roadmap, cobertura.
+- `CURSOR_CONTEXT.md` (v0.6): §14 finalmente escrita; estrutura,
+  decisões D1..D7, fase atual.
+- `PROMPTS.md`: este registro.
+
+### Suíte de testes
+- **179 testes** passando (de 160).
+- **Cobertura: 74%** (de 73%).
+- `google_news_page.py` em 62% — restante são caminhos do resolver de
+  redirect que dependem de Selenium real (mesmo padrão do
+  `base_page.py` em 81%).
+
+### Risco conhecido
+O `news.google.com` é mais tolerante a scraping que o Google Web, mas
+o layout é gerado por hashes do `c-wiz` que podem mudar. Mitigações
+implementadas:
+- locators **resilientes** (atributos semânticos: `<article>`, `<time>`,
+  `a[href^='./articles/']`) com múltiplos fallbacks.
+- detecção de captcha → log warning + skip + aborto controlado no
+  discovery.
+- delays/scroll humanizados.
+
+### Artefatos
+- `src/locators/google_news_locators.py`
+- `src/pages/google_news_page.py`
+- `src/adapters/{__init__,base,registry,generic}.py`
+- `src/steps/{discovery,coleta}_step.py` *(atualizados)*
+- `src/utils/config.py` *(novas settings)*
+- `.env.example` *(atualizado)*
+- `tests/test_{adapters,coleta_step,discovery_step,google_news_locators,google_news_page}.py`
+- `docs/{backlog,escopo_mvp,arquitetura}.md` *(atualizados)*
+- `README.md` *(atualizado)*
+- `CURSOR_CONTEXT.md` *(v0.6 — §14 escrita)*
+- `PROMPTS.md` *(este registro)*
+
+---
+
+## 17. Hotfix do discovery — consent + estratégia por publishers
+
+| Campo | Valor |
+|---|---|
+| **Data** | 2026-04-30 |
+| **Etapa** | Hotfix do discovery (R1) |
+| **Modelo/Ferramenta** | Cursor (Claude Opus 4.7) |
+
+### Prompt
+> "Erro: Discovery falhou: o Google não retornou fontes (provável
+> bloqueio/captcha). Tente novamente em alguns minutos."
+
+### Diagnóstico
+A primeira execução real do `main.py` após a Opção E falhou no
+discovery, retornando lista vazia. Duas causas confirmadas:
+
+1. **Consent page do Google.** Em perfil novo do Chrome (sem cookies),
+   `news.google.com` redireciona para `consent.google.com/m?...`.
+   Os seletores de consent originais cobriam variantes de
+   `accounts.google.com` mas **não casavam com o consent.google.com
+   moderno** (botão `tHlp8d`, `<form action="/save">`, etc.).
+   Resultado: a página fica travada na consent → zero cards → zero
+   domínios.
+2. **`_resolve_url` chamado em todos os ~20 cards do discovery.**
+   Cada chamada abre/fecha aba. Se popup blocker do Chrome ativar
+   ou redirect demorar, o domínio resolve para `news.google.com`,
+   que é filtrado pela blacklist de `domains.py` → lista vazia.
+
+### Correções aplicadas
+
+1. **`_handle_consent` robusto** em `GoogleNewsPage`:
+   - Detecta consent page por URL (`consent.google.com`) **e** por
+     forma `<form action*='/save'>`, `<form action*='consent.google'>`,
+     `<div role='dialog'> form>`.
+   - Tenta múltiplos seletores: `button.tHlp8d`, `button[jsname='b3VHJd']`,
+     `button[aria-label*='Aceitar']`, `button[aria-label*='Accept']`,
+     XPath `//button[normalize-space()='Aceitar tudo']`, etc.
+   - Faz até 3 tentativas e aguarda redirect saindo de
+     `consent.google.com`.
+
+2. **Discovery por publishers** (em vez de por hrefs):
+   - `discover_top_sources` agora agrupa cards pelo nome do publisher
+     (`<div data-n-tid>`, `<div.vr1PYe>`, etc.) e ranqueia por
+     frequência.
+   - Para cada um dos top K publishers, resolve **um único** redirect
+     para descobrir o domínio canônico.
+   - Custo: ~3 redirects (em vez de ~20) → 7× mais rápido e mais
+     resiliente a falhas de popup.
+
+3. **Logs detalhados** em cada etapa:
+   - `URL apos consent`, `nº cards encontrados`, `nº publishers únicos`,
+     `top publishers (por frequencia)`, `dominios selecionados`.
+   - Falhas no `_resolve_url` agora vão pro log em DEBUG com motivo.
+
+4. **Mensagem de erro útil** no orchestrator:
+   - Lista as 4 causas mais prováveis (consent, captcha, layout,
+     redirect) e direciona o usuário aos logs.
+
+### Arquivos alterados
+- `src/locators/google_news_locators.py` — `+CONSENT_PAGE_INDICATORS`,
+  `CONSENT_LOCATORS` ampliado (12 fallbacks com CSS + XPath).
+- `src/pages/google_news_page.py` — `+_handle_consent`,
+  `+_is_consent_page`, `+_wait_for_url_change`,
+  `+_resolve_publisher_domain`, `+_extract_external_href`. Discovery
+  reescrito (estratégia por publishers).
+- `src/services/orchestrator.py` — mensagem de discovery falho mais
+  útil.
+- `tests/test_google_news_page.py` — `+test_retorna_vazio_quando_consent_nao_resolve`,
+  `test_extrai_dominios_dos_cards_via_publishers` (substitui o
+  anterior), `+test_dedupa_dominios_de_publishers_diferentes_mesmo_dominio`.
+
+### Suíte de testes
+- **181 testes** passando (de 179).
+- Cobertura mantida.
+
+### Como validar manualmente
+```powershell
+.\.venv\Scripts\Activate.ps1
+python main.py
+```
+
+Esperado nos logs:
+```
+INFO Abrindo URL: https://news.google.com/search?q=...
+INFO Consent page detectada (tentativa 1): https://consent.google.com/m?continue=...
+INFO Discovery: URL apos consent = https://news.google.com/search?q=...
+INFO Discovery: 20 cards encontrados
+INFO Discovery: 8 publishers unicos: ['g1', 'cnn brasil', ...]
+INFO Discovery: top publishers (por frequencia) = ['g1', 'cnn brasil', 'uol']
+INFO Discovery: dominios selecionados = ['globo.com', 'cnnbrasil.com.br', 'uol.com.br']
+```
+
+### Artefatos
+- `src/locators/google_news_locators.py`
+- `src/pages/google_news_page.py`
+- `src/services/orchestrator.py`
+- `tests/test_google_news_page.py`
+- `PROMPTS.md` *(este registro)*
+
+---
+
 ## Backlog de prompts (planejado)
 
 > Lista de prompts previstos para as próximas etapas. Será movida para
@@ -722,4 +1161,144 @@ TOTAL coverage: 75% (limite RNF11: 60%)
 
 ---
 
-_Última atualização: 2026-04-30 (suíte de testes — 73 testes / 75% cobertura)_
+## 16. Reset arquitetural — remove Google e o input de "número de dias"
+
+| Campo | Valor |
+|---|---|
+| **Data** | 2026-04-30 |
+| **Etapa** | Refino / Refatoração |
+| **Modelo/Ferramenta** | Cursor (Claude Opus 4.7) |
+
+### Prompt
+> "Certo, a implementação usando o google não funcionou. Vamos fazer
+> uma mudança grande no projeto. Voltando no escopo_mvp.md e
+> backlog.md, vamos remover a segunda entrada do usuário que trata
+> dos dias. A única escolha do usuário será o tema da notícia. As
+> noticia serão aquelas que forem encontradas no site de busca.
+> Remova isso de todos os arquivos relacionados. Após isso, vamos
+> voltar a implementação inicial. Após abrir o navegador, as
+> principais notícias de acordo com o tema escolhido, serão
+> pesquisadas nos sites de confiaça, que não bloqueiam scrapping e
+> nem pedem senhas. Remova os relacionamentos com o google. Remova a
+> pasta output e src/adapters."
+
+### Confirmações coletadas (via menu)
+- **Sites confiáveis**: G1, BBC News Brasil, Agência Brasil, R7.
+- **Estratégia de coleta por site**: editoria → busca interna como
+  fallback (instrução textual: "Se não encontrar registros direto na
+  editoria, usar a busca interna do site").
+- **Limite por site**: manter `MAX_NEWS_PER_SITE` (default `15`) no
+  `.env`.
+- **Datas**: extrair `published_at` quando possível e usar para
+  ordenar (mais recentes primeiro).
+- **Utils de datas**: manter só o mínimo útil (`parse_date`).
+
+### Saída / Realizado
+
+#### Documentação
+- `docs/escopo_mvp.md` reescrito (v0.8): RFs renumerados (RF01–RF15),
+  removidos todos os "N dias", nova seção §4 (lista fixa das 4 fontes),
+  RNFs/RFs ajustados, "Fora de escopo" agora lista filtro por janela e
+  discovery via Google explicitamente.
+- `docs/backlog.md` reescrito (v1.0): RT01 atualizado (BaseNewsPage +
+  POs por site); B-004/B-006/B-008/B-009/B-010/B-012 reabertos com a
+  nova descrição; B-011 (dedupe URL+título) mantido concluído.
+- `docs/arquitetura.md` reescrito (v0.6): nó `Google News`, `Adapter
+  Registry` e `GenericNewsAdapter` removidos; substituídos por
+  `BaseNewsPage` + 4 nós de Page Object (`G1Page`, `BBCBrasilPage`,
+  `AgenciaBrasilPage`, `R7Page`); fluxo de dados sem "número de dias".
+- `README.md` reescrito: nova seção "Fontes de notícias", roadmap
+  atualizado (B-006/B-008/B-009/B-010/B-012 como pendentes na nova
+  estrutura).
+- `.env.example` enxugado (remove `GOOGLE_*`, `DISCOVERY_*`,
+  `GENERIC_ADAPTER_*`, `RESOLVE_ARTICLE_URLS`, `MAX_DAYS`).
+
+#### Código removido
+- `src/adapters/` (pasta inteira: `base.py`, `registry.py`,
+  `generic.py`, `__init__.py`).
+- `src/pages/google_news_page.py`.
+- `src/locators/google_news_locators.py`.
+- `src/steps/discovery_step.py`.
+- `src/utils/debug_dump.py` (debug dump específico do Google News).
+- `src/utils/dates.py` (`iter_recent_dates`, `today_local`,
+  `format_brazilian_date` — todos atrelados à janela de N dias).
+- `src/utils/domains.py` (`extract_domain`, `root_domain`,
+  `is_news_domain`, `rank_domains` — usados apenas pelo discovery).
+- `output/` (pasta inteira).
+- Testes correspondentes:
+  `test_google_news_page.py`, `test_google_news_locators.py`,
+  `test_discovery_step.py`, `test_adapters.py`, `test_dates.py`,
+  `test_domains.py`, e o antigo `test_coleta_step.py`.
+
+#### Código novo
+- `src/pages/base_news_page.py` (`BaseNewsPage`): fluxo
+  editoria → busca interna; helpers `_extract_article`,
+  `_extract_href`, `_extract_datetime`, `_first_text`, `_absolutize`.
+- `src/locators/g1_locators.py` + `src/pages/g1_page.py`
+  (`G1Page`, editorias para 8 dos 10 temas).
+- `src/locators/bbc_brasil_locators.py` + `src/pages/bbc_brasil_page.py`
+  (`BBCBrasilPage`, sempre via busca interna).
+- `src/locators/agencia_brasil_locators.py` +
+  `src/pages/agencia_brasil_page.py` (`AgenciaBrasilPage`, editorias
+  para 8 temas).
+- `src/locators/r7_locators.py` + `src/pages/r7_page.py`
+  (`R7Page`, editorias para 8 temas).
+- `tests/test_base_news_page.py` (15 testes do fluxo
+  editoria/busca/extração).
+- `tests/test_news_pages.py` (testes de contrato dos 4 Page Objects).
+- `tests/test_coleta_step.py` (reescrito: factories injetáveis,
+  ordenação por data, tolerância a falhas).
+
+#### Código atualizado
+- `src/utils/config.py`: removidos `max_days`,
+  `discovery_max_sources`, `discovery_results_to_scan`,
+  `generic_adapter_results_to_scan`, `google_news_base_url`,
+  `google_locale`, `google_country`, `google_news_ceid`,
+  `resolve_article_urls`. Mantém `max_news_per_site`, `selenium_*`,
+  `humanize_*`, `llm_*`.
+- `src/utils/date_filter.py`: mantém apenas `parse_date`
+  (`within_last_days`/`filter_recent` removidas).
+- `src/models/user_input.py`: campo `days` removido.
+- `src/models/summary.py`: campo `days` removido.
+- `src/services/menu.py`: `collect_user_input` agora pede só o tema.
+- `src/services/orchestrator.py`: pipeline reescrito sem
+  discovery/janela; agora chama `coletar_noticias` direto nas 4
+  fontes fixas.
+- `src/steps/coleta_step.py`: itera nas 4 `BaseNewsPage`, ordena por
+  `published_at` desc, tolera falhas.
+- `src/genai/prompts.py` e `src/genai/summarizer.py`: assinatura sem
+  `days`.
+- Testes ajustados: `test_user_input.py`, `test_menu.py`,
+  `test_config.py`, `test_summary.py`, `test_summarizer.py`,
+  `test_date_filter.py`.
+
+### Resultado
+- **146 testes passando** (de 181 que existiam antes do reset — a
+  diferença é a remoção dos testes do código deletado).
+- **78% de cobertura** (acima do mínimo de 60% — RNF11).
+- Pipeline atual: input do tema → driver → `G1Page`/`BBCBrasilPage`/
+  `AgenciaBrasilPage`/`R7Page` (cada qual com fluxo editoria → busca
+  interna) → ordenação por `published_at` → dedupe URL+título →
+  sumarização (Stub LLM ou OpenAI).
+- Próximos itens R1: `B-013` (PDF) e `B-014` (mensagem final).
+
+### Artefatos
+- `docs/escopo_mvp.md`, `docs/backlog.md`, `docs/arquitetura.md`,
+  `README.md`, `.env.example`.
+- `src/pages/base_news_page.py`, `src/pages/{g1,bbc_brasil,agencia_brasil,r7}_page.py`.
+- `src/locators/{g1,bbc_brasil,agencia_brasil,r7}_locators.py`.
+- `src/utils/config.py`, `src/utils/date_filter.py`.
+- `src/models/user_input.py`, `src/models/summary.py`.
+- `src/services/menu.py`, `src/services/orchestrator.py`.
+- `src/steps/coleta_step.py`.
+- `src/genai/prompts.py`, `src/genai/summarizer.py`.
+- `tests/test_user_input.py`, `tests/test_menu.py`,
+  `tests/test_config.py`, `tests/test_summary.py`,
+  `tests/test_summarizer.py`, `tests/test_date_filter.py`,
+  `tests/test_base_news_page.py`, `tests/test_news_pages.py`,
+  `tests/test_coleta_step.py`.
+- `CURSOR_CONTEXT.md`, `PROMPTS.md` *(este registro)*.
+
+---
+
+_Última atualização: 2026-04-30 (Reset arquitetural: remove Google + janela de N dias; volta para POs dedicados em G1, BBC News Brasil, Agência Brasil e R7. 146 testes / 78% cobertura)._
