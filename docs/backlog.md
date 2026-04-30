@@ -265,3 +265,4 @@ Para qualquer item ser considerado **concluído (`[x]`)**, deve atender:
 | 0.3 | 2026-04-30 | Leonardo Santos | Adiciona **RT11 (Pydantic v2)**; limita N a `1–10` em B-004; reforça B-006 com modelo Pydantic. |
 | 0.4 | 2026-04-30 | Leonardo Santos | Refina **RT01** (POM com `locators/`, `pages/`, `steps/`, `models/`); troca **RT05** para `chromedriver-autoinstaller`; adiciona requisitos PEP8/docstrings em B-001 e Locators/Steps em B-007. |
 | 0.5 | 2026-04-30 | Leonardo Santos | Marca **B-001, B-002, B-003, B-004 e B-006 como concluídos** (estrutura modular, config via `.env`, logger, menu CLI e validação Pydantic implementados e testados). |
+| 0.6 | 2026-04-30 | Leonardo Santos | **Setup de testes do RT04 concluído** (`pyproject.toml`, `conftest.py`); **73 testes** cobrindo B-001..B-006 com **75% de cobertura** (acima do mínimo de 60% — RNF11). |

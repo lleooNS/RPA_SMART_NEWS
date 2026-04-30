@@ -28,6 +28,7 @@
 - [10. Limite de N (1–10 dias) e adoção de Pydantic v2](#10-limite-de-n-110-dias-e-adoção-de-pydantic-v2)
 - [11. Briefing local para agentes (CURSOR_CONTEXT.md)](#11-briefing-local-para-agentes-cursor_contextmd)
 - [12. Início da implementação — estrutura, config, logger, menu e validação](#12-início-da-implementação--estrutura-config-logger-menu-e-validação)
+- [13. Suíte de testes (pytest) para os módulos de R1](#13-suíte-de-testes-pytest-para-os-módulos-de-r1)
 - [Backlog de prompts (planejado)](#backlog-de-prompts-planejado)
 
 ---
@@ -608,6 +609,91 @@ nessa etapa.
 
 ---
 
+## 13. Suíte de testes (pytest) para os módulos de R1
+
+| Campo | Valor |
+|---|---|
+| **Data** | 2026-04-30 |
+| **Etapa** | Implementação / Qualidade (R1) |
+| **Modelo/Ferramenta** | Cursor (Claude Opus 4.7) |
+
+### Prompt
+> "Utilizando o pytest, precisamos realizar os testes do que foi
+> implementado até agora. Crie os arquivos de teste na pasta `tests/`.
+> Depois de criar os arquivos de testes, atualize os arquivos de
+> documentação, mostrando como executar os testes. Logo após, rode os
+> testes."
+
+### Saída / Realizado
+
+#### Configuração de testes
+- Criado **`pyproject.toml`** com:
+  - `[tool.pytest.ini_options]` — `pythonpath = ["."]`,
+    `testpaths = ["tests"]`, `addopts = ["-ra", "--strict-markers", "--strict-config"]`.
+  - `[tool.coverage.run]` — `source = ["src"]`, `branch = true`,
+    `omit = ["*/__init__.py"]`.
+  - `[tool.coverage.report]` — `show_missing = true`, exclusões para
+    `if __name__`, `pragma: no cover` e `raise NotImplementedError`.
+- Criado **`tests/conftest.py`** com fixtures:
+  - `_reset_logger` (autouse): zera handlers entre testes.
+  - `mock_inputs`: monkeypatch de `console.input` do menu.
+  - `clear_settings_cache`: limpa o `lru_cache` de `get_settings`.
+
+#### Arquivos de teste criados (`tests/`)
+| Arquivo | Cobertura |
+|---|---|
+| `test_topics.py` | `Topic` enum, `TOPIC_LABELS`, `label_for()` |
+| `test_user_input.py` | Validação Pydantic v2 (válido, fora do range, frozen) |
+| `test_config.py` | `Settings` (defaults, `max_days`/`max_retries` validação, singleton) |
+| `test_logger.py` | `setup_logger` (níveis, case-insensitive), `get_logger` |
+| `test_menu.py` | `_parse_int`, `_format_validation_error`, `display_topics`, `collect_user_input` (happy path, retries, abort) |
+| `test_base_page.py` | Placeholder de `BasePage` (init com/sem driver) |
+
+#### Resultado da execução
+```
+collected 73 items
+73 passed in 1.20s
+
+TOTAL coverage: 75% (limite RNF11: 60%)
+```
+
+| Módulo | Cobertura |
+|---|---:|
+| `src/models/topics.py` | 100% |
+| `src/models/user_input.py` | 100% |
+| `src/pages/base_page.py` | 100% |
+| `src/services/menu.py` | 95% |
+| `src/utils/config.py` | 100% |
+| `src/utils/logger.py` | 100% |
+| `src/services/orchestrator.py` | 0% _(glue UI — coberto nas próximas iterações)_ |
+
+#### Documentação atualizada
+- **`README.md`** — seção `Testes` reescrita com:
+  - Comandos para suíte completa, cobertura (`--cov`, `--cov-report=html`)
+    e filtros (`-k`, por arquivo, por classe).
+  - Tabela do estado atual (73 testes, 75% cobertura) e por módulo.
+- **`docs/backlog.md`** (v0.6) — histórico atualizado registrando que
+  o **setup de testes (RT04) está concluído** e que B-001..B-006
+  estão cobertos por testes.
+- **`CURSOR_CONTEXT.md`** (v0.3) — fase atual + commits + nota sobre
+  cobertura.
+
+### Artefatos
+- `RPA_SMART_NEWS/pyproject.toml`
+- `RPA_SMART_NEWS/tests/conftest.py`
+- `RPA_SMART_NEWS/tests/test_topics.py`
+- `RPA_SMART_NEWS/tests/test_user_input.py`
+- `RPA_SMART_NEWS/tests/test_config.py`
+- `RPA_SMART_NEWS/tests/test_logger.py`
+- `RPA_SMART_NEWS/tests/test_menu.py`
+- `RPA_SMART_NEWS/tests/test_base_page.py`
+- `RPA_SMART_NEWS/README.md` *(atualizado)*
+- `RPA_SMART_NEWS/docs/backlog.md` *(v0.6)*
+- `RPA_SMART_NEWS/CURSOR_CONTEXT.md` *(v0.3)*
+- `RPA_SMART_NEWS/PROMPTS.md` *(este registro)*
+
+---
+
 ## Backlog de prompts (planejado)
 
 > Lista de prompts previstos para as próximas etapas. Será movida para
@@ -636,4 +722,4 @@ nessa etapa.
 
 ---
 
-_Última atualização: 2026-04-30 (R1 — primeira iteração de implementação)_
+_Última atualização: 2026-04-30 (suíte de testes — 73 testes / 75% cobertura)_

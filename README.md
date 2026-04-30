@@ -256,15 +256,49 @@ python main.py
 ## Testes
 
 A estratégia de testes utiliza **pytest** com cobertura via
-**pytest-cov**.
+**pytest-cov**, configurados em `pyproject.toml`. As fixtures comuns
+ficam em `tests/conftest.py`.
 
-```bash
-pytest -v
-pytest --cov=src --cov-report=term-missing
+> ⚠️ **Importante**: ative o `.venv` antes de executar qualquer comando
+> abaixo (ver seção [Como executar](#como-executar)).
+
+### Suíte completa
+
+```powershell
+pytest                              # roda todos os testes
+pytest -v                           # modo verboso
 ```
 
-> A suíte de testes será criada à medida que os módulos forem
-> implementados.
+### Com relatório de cobertura
+
+```powershell
+pytest --cov                                       # cobertura no terminal
+pytest --cov --cov-report=term-missing             # mostra linhas faltantes
+pytest --cov --cov-report=html                     # gera HTML em htmlcov/
+```
+
+### Filtros úteis
+
+```powershell
+pytest tests/test_topics.py                        # apenas um arquivo
+pytest tests/test_menu.py::TestCollectUserInput    # uma classe específica
+pytest -k "valido"                                 # filtra por nome
+```
+
+### Estado atual
+
+- **73 testes** — todos passando.
+- **Cobertura: 75%** (acima do mínimo de 60% definido em **RNF11**).
+
+| Módulo | Cobertura |
+|---|---:|
+| `src/models/topics.py` | 100% |
+| `src/models/user_input.py` | 100% |
+| `src/pages/base_page.py` | 100% |
+| `src/services/menu.py` | 95% |
+| `src/utils/config.py` | 100% |
+| `src/utils/logger.py` | 100% |
+| `src/services/orchestrator.py` | 0% _(glue de UI — coberto nas próximas iterações)_ |
 
 ---
 
