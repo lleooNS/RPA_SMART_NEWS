@@ -19,27 +19,30 @@ class TestSettingsDefaults:
     def test_defaults(self) -> None:
         s = _build_settings()
         assert s.log_level == "INFO"
-        assert s.max_days == 10
         assert s.max_retries == 3
         assert s.output_dir.name == "output"
+        assert s.max_news_per_site == 15
+        assert s.headless is False
 
 
 class TestSettingsValidacao:
     """Validação dos campos do `Settings`."""
-
-    @pytest.mark.parametrize("max_days_invalido", [0, -1, 11, 100])
-    def test_max_days_fora_do_intervalo(self, max_days_invalido: int) -> None:
-        with pytest.raises(ValidationError):
-            _build_settings(max_days=max_days_invalido)
 
     @pytest.mark.parametrize("max_retries_invalido", [0, -1, -10])
     def test_max_retries_invalido(self, max_retries_invalido: int) -> None:
         with pytest.raises(ValidationError):
             _build_settings(max_retries=max_retries_invalido)
 
-    def test_max_days_nos_limites(self) -> None:
-        assert _build_settings(max_days=1).max_days == 1
-        assert _build_settings(max_days=10).max_days == 10
+    @pytest.mark.parametrize("max_news_invalido", [0, -1, 999])
+    def test_max_news_per_site_fora_do_intervalo(
+        self, max_news_invalido: int
+    ) -> None:
+        with pytest.raises(ValidationError):
+            _build_settings(max_news_per_site=max_news_invalido)
+
+    def test_humanize_max_menor_que_min_falha(self) -> None:
+        with pytest.raises(ValidationError):
+            _build_settings(humanize_delay_min=2.0, humanize_delay_max=1.0)
 
 
 class TestGetSettings:
