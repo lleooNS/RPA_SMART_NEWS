@@ -12,7 +12,8 @@
 
 - [1. Diagrama de componentes](#1-diagrama-de-componentes)
 - [2. Diagrama de fluxo de dados](#2-diagrama-de-fluxo-de-dados)
-- [3. Legenda](#3-legenda)
+- [3. Diagrama de sequência](#3-diagrama-de-sequência)
+- [4. Legenda](#4-legenda)
 - [Histórico de revisões](#histórico-de-revisões)
 
 ---
@@ -117,7 +118,42 @@ flowchart LR
 
 ---
 
-## 3. Legenda
+## 3. Diagrama de sequência
+
+Jornada crítica do MVP (*happy path*): escolha do tema → validação → coleta → dedupe → sumarização → PDF.
+
+```mermaid
+sequenceDiagram
+    actor U as Usuario
+    participant CLI as main/Orchestrator
+    participant VAL as Menu+Pydantic
+    participant COL as ColetaStep
+    participant WEB as PageObjects(4 fontes)
+    participant DED as Dedupe
+    participant LLM as Summarizer/LLM
+    participant PDF as PDF Generator
+
+    U->>CLI: escolhe tema (1-10)
+    CLI->>VAL: valida input
+    alt invalido
+        VAL-->>U: mensagem + re-solicita
+    else valido
+        CLI->>COL: iniciar coleta(tema)
+        COL->>WEB: coletar por fonte
+        WEB-->>COL: noticias (parcial se 1 fonte falhar)
+        COL->>DED: dedupe URL+titulo
+        DED-->>CLI: lista unica
+        CLI->>LLM: sumarizar
+        LLM-->>CLI: Summary
+        CLI->>PDF: generate_pdf
+        PDF-->>CLI: caminho absoluto
+        CLI-->>U: exibe caminho do PDF
+    end
+```
+
+---
+
+## 4. Legenda
 
 | Notação | Significado |
 |---|---|
@@ -140,3 +176,4 @@ flowchart LR
 | 0.4 | 2026-04-30 | Leonardo Santos | Troca `webdriver-manager` por **`chromedriver-autoinstaller`** no nó `Driver Factory`. |
 | 0.5 | 2026-04-30 | Leonardo Santos | **Opção E aplicada**: discovery e coleta migram para `news.google.com`; introduz nós `GoogleNewsPage`, `Adapter Registry`, `GenericNewsAdapter` e (futuros) adapters curados. Filtro de janela passa a ser **local** sobre `published_at`. |
 | 0.6 | 2026-04-30 | Leonardo Santos | **Reset arquitetural**: remove integração com Google (`GoogleNewsPage`, `Adapter Registry`, `GenericNewsAdapter`, filtro de janela). Volta para **POM por site fixo** (G1, BBC News Brasil, Agência Brasil, R7), com `BaseNewsPage` que tenta editoria → busca interna. Remove o nó "número de dias" do fluxo — a única entrada do usuário é o tema. |
+| 0.7 | 2026-09-11 | Leonardo Santos | Adiciona **diagrama de sequência** da jornada crítica (menu → coleta → dedupe → sumarização → PDF); renumeração da legenda para §4. |
